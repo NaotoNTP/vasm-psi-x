@@ -1,5 +1,5 @@
 /* syntax.c  syntax module for vasm */
-/* (c) in 2002-2023 by Frank Wille */
+/* (c) in 2024 by 'Naoto' */
 
 #include "vasm.h"
 
@@ -12,20 +12,35 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm motorola syntax module 3.18 (c) 2002-2023 Frank Wille";
+const char *syntax_copyright="vasm psy-q style syntax module (c) 2024 'Naoto'";
+
+/* This syntax module was made to combine elements of other default syntax 
+   modules into one that I find provides me with the best developer experience 
+   possible. I've grown used to PSY-Q's family of assemblers as well as the 
+   AS Macro Assembler, so my goal was to imitate their syntax and directive sets
+   as closely as possible with the understanding that I cannot achieve full
+   compatibility with either of them. As such, I make no promises that this 
+   syntax module will be compatible out-of-the box with a project built around 
+   the PSY-Q or AS assemblers. Instead, my hope is that it will be much easier
+   to migrate away from those assemblers if desired, without the burden of having
+   to weigh the pros and cons of all the default syntax modules.
+   - Naoto
+*/
+
 hashtable *dirhash;
 char commentchar = ';';
 int dotdirs;
 
-static char code_name[] = "CODE";
-static char data_name[] = "DATA";
-static char bss_name[] = "BSS";
-static char code_type[] = "acrx";
-static char data_type[] = "adrw";
-static char bss_type[] = "aurw";
+/* default sections */
+static char code_name[] = "CODE",code_type[] = "acrx";
+static char data_name[] = "DATA",data_type[] = "adrw";
+static char bss_name[] = "BSS",bss_type[] = "aurw";
+
 static char rs_name[] = "__RS";
+/*
 static char so_name[] = "__SO";
 static char fo_name[] = "__FO";
+*/
 static char line_name[] = "__LINE__";
 
 static struct namelen macro_dirlist[] = {
@@ -40,9 +55,11 @@ static struct namelen rept_dirlist[] = {
 static struct namelen endr_dirlist[] = {
   { 4,"endr" }, { 0,0 }
 };
+/*
 static struct namelen erem_dirlist[] = {
   { 4,"erem" }, { 0,0 }
 };
+*/
 
 /* options */
 static int allmp;
@@ -67,12 +84,12 @@ static unsigned long id_stack[IDSTACKSIZE];
 static int id_stack_index;
 
 /* isolated local labels block */
-#define INLSTACKSIZE 100
-#define INLLABFMT "=%06d"
-static int inline_stack[INLSTACKSIZE];
-static int inline_stack_index;
+#define MODSTACKSIZE 100
+#define MODLABFMT "=%06d"
+static int module_stack[MODSTACKSIZE];
+static int module_stack_index;
 static const char *saved_last_global_label;
-static char inl_lab_name[8];
+static char mod_lab_name[8];
 static int local_id;
 
 static int parse_end = 0;
@@ -503,7 +520,7 @@ static void handle_section(char *s)
     set_section(motsection(new_section(name,attr,1),mem));
 }
 
-
+/*
 static void handle_offset(char *s)
 {
   taddr offs;
@@ -511,13 +528,13 @@ static void handle_offset(char *s)
   if (!ISEOL(s))
     offs = parse_constexpr(&s);
   else
-    offs = -1;  /* use last offset */
+    offs = -1;  /* use last offset 
 
   if (!devpac_compat)
     try_end_rorg();
   switch_offset_section(NULL,offs);
 }
-
+*/
 
 static void nameattrsection(char *secname,char *sectype,uint32_t mem)
 /* switch to a section called secname, with attributes sectype+addattr */
@@ -525,6 +542,7 @@ static void nameattrsection(char *secname,char *sectype,uint32_t mem)
   set_section(motsection(new_section(secname,sectype,1),mem));
 }
 
+/*
 static void handle_csec(char *s)
 {
   nameattrsection(code_name,code_type,0);
@@ -542,34 +560,34 @@ static void handle_bss(char *s)
 
 static void handle_codec(char *s)
 {
-  nameattrsection("CODE_C",code_type,2);  /* AmigaDOS MEMF_CHIP */
+  nameattrsection("CODE_C",code_type,2);
 }
 
 static void handle_codef(char *s)
 {
-  nameattrsection("CODE_F",code_type,4);  /* AmigaDOS MEMF_FAST */
+  nameattrsection("CODE_F",code_type,4);
 }
 
 static void handle_datac(char *s)
 {
-  nameattrsection("DATA_C",data_type,2);  /* AmigaDOS MEMF_CHIP */
+  nameattrsection("DATA_C",data_type,2);
 }
 
 static void handle_dataf(char *s)
 {
-  nameattrsection("DATA_F",data_type,4);  /* AmigaDOS MEMF_FAST */
+  nameattrsection("DATA_F",data_type,4);
 }
 
 static void handle_bssc(char *s)
 {
-  nameattrsection("BSS_C",bss_type,2);  /* AmigaDOS MEMF_CHIP */
+  nameattrsection("BSS_C",bss_type,2);
 }
 
 static void handle_bssf(char *s)
 {
-  nameattrsection("BSS_F",bss_type,4);  /* AmigaDOS MEMF_FAST */
+  nameattrsection("BSS_F",bss_type,4);
 }
-
+*/
 
 static void handle_org(char *s)
 {
@@ -591,20 +609,17 @@ static void handle_org(char *s)
 }
 
 
-static void handle_rorg(char *s)
+static void handle_obj(char *s)
 {
-  expr *offs = parse_expr_tmplab(&s);
-  expr *fill;
+  start_rorg(parse_constexpr(&s));
+  eol(s);
+}
+  
 
-  s = skip(s);
-  if (*s == ',') {
-    /* may be followed by an optional fill-value */
-    s = skip(s+1);
-    fill = parse_expr_tmplab(&s);
-  }
-  else
-    fill = NULL;
-  add_atom(0,new_roffs_atom(offs,fill));
+static void handle_objend(char *s)
+{
+  if (end_rorg())
+    eol(s);
 }
 
 
@@ -652,7 +667,7 @@ static void handle_global(char *s)
   do_bind(s,EXPORT);
 }
 
-
+/*
 static void handle_weak(char *s)
 {
   do_bind(s,WEAK);
@@ -663,33 +678,7 @@ static void handle_nref(char *s)
 {
   do_bind(s,EXPORT|XREF|NEAR);
 }
-
-
-static void handle_comm(char *s)
-{
-  strbuf *name = parse_identifier(0,&s);
-  symbol *sym;
-  taddr sz = 4;
-
-  if (name == NULL) {
-    syntax_error(10);  /* identifier expected */
-    return;
-  }
-  sym = new_import(name->str);
-  sym->flags |= COMMON;
-
-  s = skip(s);
-  if (*s == ',') {
-    s = skip(s+1);
-    sz = parse_constexpr(&s);
-  }
-  else
-    syntax_error(9);  /* , expected */
-
-  sym->size = number_expr(sz);
-  sym->align = 4;
-}
-
+*/
 
 static void handle_data(char *s,int size)
 {
@@ -754,7 +743,7 @@ static void handle_d64(char *s)
   handle_data(s,64);
 }
 
-
+/*
 #if FLOAT_PARSER
 static void handle_f32(char *s)
 {
@@ -776,10 +765,10 @@ static void handle_f96(char *s)
 
 static void handle_fpd(char *s)
 {
-  handle_data(s,OPSZ_FLOAT|97);  /* packed decimal */
+  handle_data(s,OPSZ_FLOAT|97);
 }
 #endif
-
+*/
 
 static void do_alignment(taddr align,expr *offset,size_t pad,expr *fill)
 {
@@ -825,12 +814,12 @@ static void handle_even(char *s)
   do_alignment(2,number_expr(0),1,NULL);
 }
 
-
+/*
 static void handle_odd(char *s)
 {
   do_alignment(2,number_expr(1),1,NULL);
 }
-
+*/
 
 static void handle_block(char *s,int size)
 {
@@ -863,18 +852,19 @@ static void handle_xspc32(char *s)
   handle_dbss(s,32);
 }
 
-
+/*
 static void handle_xspc64(char *s)
 {
   handle_dbss(s,64);
 }
+*/
 
-
+/*
 static void handle_xspc96(char *s)
 {
   handle_dbss(s,96);
 }
-
+*/
 
 static void handle_spc8(char *s)
 {
@@ -893,18 +883,19 @@ static void handle_spc32(char *s)
   handle_space(s,32);
 }
 
-
+/*
 static void handle_spc64(char *s)
 {
   handle_space(s,64);
 }
+*/
 
-
+/*
 static void handle_spc96(char *s)
 {
   handle_space(s,96);
 }
-
+*/
 
 static void handle_blk8(char *s)
 {
@@ -923,91 +914,31 @@ static void handle_blk32(char *s)
   handle_block(s,32);
 }
 
-
+/*
 static void handle_blk64(char *s)
 {
   handle_block(s,64);
 }
+*/
 
-
+/*
 static void handle_blk96(char *s)
 {
   handle_block(s,96);
 }
-
-
-#ifdef VASM_CPU_M68K
-static void handle_reldata(char *s,int size)
-{
-  for (;;) {
-    char *opstart = s;
-    operand *op;
-
-    op = new_operand();
-    s = skip_operand(s);
-    if (parse_operand(opstart,s-opstart,op,DATA_OPERAND(size))) {
-      if (op->value[0]) {
-        expr *tmplab,*new;
-        atom *a;
-
-        tmplab = new_expr();
-        tmplab->type = SYM;
-        tmplab->c.sym = new_tmplabel(0);
-        add_atom(0,new_label_atom(tmplab->c.sym));
-        /* subtract the current pc value from all data expressions */
-        new = make_expr(SUB,op->value[0],tmplab);
-        simplify_expr(new);
-        op->value[0] = new;
-        a = new_datadef_atom(OPSZ_BITS(size),op);
-        if (!align_data)
-          a->align = 1;
-        add_atom(0,a);
-      }
-      else
-        ierror(0);
-    }
-    else
-      syntax_error(8);  /* invalid data operand */
-    s = skip(s);
-    if (*s == ',')
-      s = skip(s+1);
-    else
-      break;
-  }
-}
-
-
-static void handle_reldata8(char *s)
-{
-  handle_reldata(s,8);
-}
-
-
-static void handle_reldata16(char *s)
-{
-  handle_reldata(s,16);
-}
-
-
-static void handle_reldata32(char *s)
-{
-  handle_reldata(s,32);
-}
-#endif
-
+*/
 
 static void handle_end(char *s)
 {
   parse_end = 1;
 }
 
-
 static void handle_fail(char *s)   
 { 
   add_or_save_atom(new_assert_atom(NULL,NULL,mystrdup(s)));
 }
 
-
+/*
 static void handle_assert(char *s)
 {
   char *expstr,*msgstr;
@@ -1030,8 +961,9 @@ static void handle_assert(char *s)
 
   add_or_save_atom(new_assert_atom(aexp,cnvstr(expstr,explen),msgstr));
 }
+*/
 
-
+/*
 static void handle_idnt(char *s)
 {
   strbuf *name;
@@ -1039,7 +971,7 @@ static void handle_idnt(char *s)
   if (name = parse_name(0,&s))
     setfilename(mystrdup(name->str));
 }
-
+*/
 
 static void handle_list(char *s)
 {
@@ -1052,28 +984,7 @@ static void handle_nolist(char *s)
   set_listing(0);
 }
 
-
-static void handle_plen(char *s)
-{
-  int plen = (int)parse_constexpr(&s);
-
-  listlinesperpage = plen > 12 ? plen : 12;
-}
-
-
-static void handle_page(char *s)
-{
-  /* @@@ we should also start a new page here! */
-  listformfeed = 1;
-}
-
-
-static void handle_nopage(char *s)
-{
-  listformfeed = 0;
-}
-
-
+/*
 static void handle_output(char *s)
 {
   strbuf *buf;
@@ -1098,8 +1009,9 @@ static void handle_output(char *s)
       outname = mystrdup(buf->str);
   }
 }
+*/
 
-
+/*
 static void handle_dsource(char *s)
 {
   strbuf *name;
@@ -1149,7 +1061,7 @@ static void handle_incdir(char *s)
   }
   syntax_error(5);
 }
-
+*/
 
 static void handle_include(char *s)
 {
@@ -1188,7 +1100,6 @@ static void handle_incbin(char *s)
   }
 }
 
-
 static void handle_rept(char *s)
 {
   int cnt = (int)parse_constexpr(&s);
@@ -1196,44 +1107,20 @@ static void handle_rept(char *s)
   new_repeat(cnt<0?0:cnt,NULL,NULL,rept_dirlist,endr_dirlist);
 }
 
-
 static void handle_endr(char *s)
 {
   syntax_error(12,"endr","rept");  /* unexpected endr without rept */
 }
-
-
-static void handle_macro(char *s)
-{
-  strbuf *name;
-
-  if (name = parse_identifier(0,&s)) {
-    s = skip(s);
-    if (*s == ',') {  /* named macro arguments are given? */
-      s++;
-    }
-    else {
-      eol(s);
-      s = NULL;
-    }
-    new_macro(name->str,macro_dirlist,endm_dirlist,s);
-  }
-  else
-    syntax_error(10);  /* identifier expected */
-}
-
 
 static void handle_endm(char *s)
 {
   syntax_error(12,"endm","macro");  /* unexpected endm without macro */
 }
 
-
 static void handle_mexit(char *s)
 {
   leave_macro();
 }
-
 
 #if STRUCT
 static void handle_struct(char *s)
@@ -1268,18 +1155,17 @@ static void handle_endstruct(char *s)
 }
 #endif
 
-
+/*
 static void handle_rem(char *s)
 {
   new_repeat(0,NULL,NULL,NULL,erem_dirlist);
 }
 
-
 static void handle_erem(char *s)
 {
-  syntax_error(12,"erem","rem");  /* unexpected erem without rem */
+  syntax_error(12,"erem","rem");  unexpected erem without rem 
 }
-
+*/
 
 static void handle_ifb(char *s)
 {
@@ -1465,18 +1351,6 @@ static void handle_ifle(char *s)
   ifexp(s,5);
 }
 
-static void handle_ifp1(char *s)
-{
-  cond_if(1);        /* vasm parses only once, so we assume true */
-  syntax_error(25);  /* and warn about it */
-}
-
-static void handle_ifp2(char *s)
-{
-  cond_if(0);        /* vasm parses only once, so we assume false */
-  syntax_error(26);  /* and warn about it */
-}
-
 static void handle_else(char *s)
 {
   cond_skipelse();
@@ -1491,7 +1365,6 @@ static void handle_endif(char *s)
 {
   cond_endif();
 }
-
 
 static void handle_rsreset(char *s)
 {
@@ -1508,6 +1381,7 @@ static void handle_rseven(char *s)
   setoffset_align(rs_name,1,2);
 }
 
+/*
 static void handle_clrfo(char *s)
 {
   new_abs(fo_name,number_expr(0));
@@ -1517,6 +1391,7 @@ static void handle_setfo(char *s)
 {
   new_abs(fo_name,parse_expr_tmplab(&s));
 }
+*/
 
 static void handle_rs8(char *s)
 {
@@ -1533,16 +1408,21 @@ static void handle_rs32(char *s)
   new_setoffset_size(NULL,rs_name,&s,1,4);
 }
 
+/*
 static void handle_rs64(char *s)
 {
   new_setoffset_size(NULL,rs_name,&s,1,8);
 }
+*/
 
+/*
 static void handle_rs96(char *s)
 {
   new_setoffset_size(NULL,rs_name,&s,1,12);
 }
+*/
 
+/*
 static void handle_fo8(char *s)
 {
   new_setoffset_size(NULL,fo_name,&s,-1,1);
@@ -1567,74 +1447,9 @@ static void handle_fo96(char *s)
 {
   new_setoffset_size(NULL,fo_name,&s,-1,12);
 }
+*/
 
-static void handle_cargs(char *s)
-{
-  char *name;
-  expr *offs;
-  taddr size;
-
-  if (*s == '#') {
-    /* offset given */
-    ++s;
-    offs = parse_expr_tmplab(&s);
-    s = skip(s);
-    if (*s != ',')
-      syntax_error(9);  /* , expected */
-    else
-      s = skip(s+1);
-  }
-  else
-    offs = number_expr(bytespertaddr);  /* default offset */
-
-  for (;;) {
-
-    if (!(name = parse_symbol(&s))) {
-      syntax_error(10);  /* identifier expected */
-      break;
-    }
-
-    if (!check_symbol(name)) {
-      /* define new stack offset symbol */
-      new_abs(name,copy_tree(offs));
-    }
-
-    /* increment offset by given size */
-    if (*s == '.') {
-      ++s;
-      switch (tolower((unsigned char)*s)) {
-        case 'b':
-        case 'w':
-          size = 2;
-          ++s;
-          break;
-        case 'l':
-          size = 4;
-          ++s;
-          break;
-        default:
-          size = 2;
-          syntax_error(1);  /* invalid extension */
-          break;
-      }
-    }
-    else
-      size = 2;
-
-    s = skip(s);
-    if (*s != ',')  /* define another offset symbol? */
-      break;
-
-    offs = make_expr(ADD,offs,number_expr(size));
-    simplify_expr(offs);
-    s = skip(s+1);
-  }
-
-  /* offset expression was copied, so we can free it now */
-  if (offs)
-    free_expr(offs);
-}
-
+/*
 static void handle_printt(char *s)
 {
   strbuf *txt;
@@ -1644,12 +1459,14 @@ static void handle_printt(char *s)
     s = skip(s);
     if (*s != ',')
       break;
-    add_or_save_atom(new_text_atom(NULL));  /* new line */
+    add_or_save_atom(new_text_atom(NULL));  /* new line 
     s = skip(s+1);
   }
-  add_or_save_atom(new_text_atom(NULL));  /* new line */
+  add_or_save_atom(new_text_atom(NULL));  /* new line 
 }
+*/
 
+/*
 static void handle_printv(char *s)
 {
   expr *x;
@@ -1664,14 +1481,16 @@ static void handle_printv(char *s)
     add_or_save_atom(new_expr_atom(x,PEXP_ASC,32));
     add_or_save_atom(new_text_atom("\" %"));
     add_or_save_atom(new_expr_atom(x,PEXP_BIN,32));
-    add_or_save_atom(new_text_atom(NULL));  /* new line */
+    add_or_save_atom(new_text_atom(NULL));  /* new line 
     s = skip(s);
     if (*s != ',')
       break;
     s = skip(s+1);
   }    
 }
+*/
 
+/*
 static void handle_echo(char *s)
 {
   if (phxass_compat) {
@@ -1695,82 +1514,47 @@ static void handle_echo(char *s)
       s = skip(s+1);
     }
   }
-  add_or_save_atom(new_text_atom(NULL));  /* new line */
+  add_or_save_atom(new_text_atom(NULL));  /* new line 
 }
+*/
 
-static void handle_showoffset(char *s)
-{
-  strbuf *txt;
-
-  if (txt = parse_name(0,&s))
-    add_or_save_atom(new_text_atom(mystrdup(txt->str)));
-  add_or_save_atom(new_text_atom(" "));
-  add_or_save_atom(new_expr_atom(curpc_expr(),PEXP_HEX,32));
-  add_or_save_atom(new_text_atom(NULL));  /* new line */
-}
-
-static void handle_dummy_expr(char *s)
-{
-  parse_expr(&s);
-  syntax_error(11);  /* directive has no effect */
-}
-
-static void handle_dummy_cexpr(char *s)
-{
-  parse_constexpr(&s);
-  syntax_error(11);  /* directive has no effect */
-}
-
-static void handle_noop(char *s)
-{
-  syntax_error(11);  /* directive has no effect */
-}
-
-static void handle_comment(char *s)
-{
-  /* handle Atari-specific "COMMENT HEAD=<expr>" to define the tos-flags */
-  if (!strnicmp(s,"HEAD=",5)) {
-    s += 5;
-    new_abs(" TOSFLAGS",parse_expr_tmplab(&s));
-  }
-  /* otherwise it's just a comment to be ignored */
-}
-
+/*
 static void handle_local(char *s)
 {
-  sprintf(inl_lab_name,INLLABFMT,local_id++);
-  set_last_global_label(mystrdup(inl_lab_name));
+  sprintf(mod_lab_name,MODLABFMT,local_id++);
+  set_last_global_label(mystrdup(mod_lab_name));
 }
+*/
 
-static void handle_inline(char *s)
+static void handle_module(char *s)
 {
   const char *last;
 
-  if (inline_stack_index < INLSTACKSIZE) {
-    sprintf(inl_lab_name,INLLABFMT,local_id);
-    last = set_last_global_label(inl_lab_name);
-    if (inline_stack_index == 0)
+  if (module_stack_index < MODSTACKSIZE) {
+    sprintf(mod_lab_name,MODLABFMT,local_id);
+    last = set_last_global_label(mod_lab_name);
+    if (module_stack_index == 0)
       saved_last_global_label = last;
-    inline_stack[inline_stack_index++] = local_id++;
+    module_stack[module_stack_index++] = local_id++;
   }
   else
-    syntax_error(22,INLSTACKSIZE);  /* maximum inline nesting depth exceeded */
+    syntax_error(22,MODSTACKSIZE);  /* maximum module nesting depth exceeded */
 }
 
-static void handle_einline(char *s)
+static void handle_modend(char *s)
 {
-  if (inline_stack_index > 0 ) {
-    if (--inline_stack_index == 0) {
+  if (module_stack_index > 0 ) {
+    if (--module_stack_index == 0) {
       set_last_global_label(saved_last_global_label);
       saved_last_global_label = NULL;
     }
     else {
-      sprintf(inl_lab_name,INLLABFMT,inline_stack[inline_stack_index-1]);
-      set_last_global_label(inl_lab_name);
+      sprintf(mod_lab_name,MODLABFMT,module_stack[module_stack_index-1]);
+      set_last_global_label(mod_lab_name);
     }
   }
   else
-    syntax_error(20);  /* einline without inline */
+    syntax_error(20);  /* modend without module */
 }
 
 static void handle_pushsect(char *s)
@@ -1785,212 +1569,142 @@ static void handle_popsect(char *s)
   eol(s);
 }
 
+#if FLOAT_PARSER
+static void handle_single(char *s){ handle_data(s,OPSZ_FLOAT|32); }
+static void handle_double(char *s){ handle_data(s,OPSZ_FLOAT|64); }
+#endif
 
-#define D 1 /* available for DevPac */
-#define P 2 /* available for PhxAss */
 struct {
   const char *name;
-  int avail;
   void (*func)(char *);
 } directives[] = {
-  "org",P|D,handle_org,
-  "rorg",P|D,handle_rorg,
-  "section",P|D,handle_section,
-  "offset",P|D,handle_offset,
-  "code",P|D,handle_csec,
-  "cseg",P,handle_csec,
-  "text",P|D,handle_csec,
-  "data",P|D,handle_dsec,
-  "dseg",P,handle_dsec,
-  "bss",P|D,handle_bss,
-  "code_c",P|D,handle_codec,
-  "code_f",P|D,handle_codef,
-  "data_c",P|D,handle_datac,
-  "data_f",P|D,handle_dataf,
-  "bss_c",P|D,handle_bssc,
-  "bss_f",P|D,handle_bssf,
-  "public",P,handle_global,
-  "xdef",P|D,handle_xdef,
-  "xref",P|D,handle_xref,
-  "xref.l",P|D,handle_xref,
-  "nref",P,handle_nref,
-  "entry",0,handle_global,
-  "extrn",0,handle_global,
-  "global",0,handle_global,
-  "import",0,handle_xref,   /* modifictation: pink-rg: handle purec syntax */
-  "export",0,handle_xdef,   /* modifictation: pink-rg: handle purec syntax */
-  "weak",0,handle_weak,
-  "comm",0,handle_comm,
-#ifndef VASM_CPU_JAGRISC    /* conflicts with Jaguar load instruction */
-  "load",P,handle_dummy_expr,
+/* TODO: possibly radix, alias, and disable directives?*/
+
+  "rsset",handle_rsset,	
+  "rsreset",handle_rsreset,
+  "rseven",handle_rseven,
+
+#if defined(VASM_CPU_M68K)
+  "rs",handle_rs16,
+  "rs.b",handle_rs8,
+  "rs.w",handle_rs16,
+  "rs.l",handle_rs32,
+
+  "dc.b",handle_d8,
+  "dc.w",handle_d16,
+  "dc.l",handle_d32,
+
+  "dcb",handle_blk16,
+  "dcb.b",handle_blk8,
+  "dcb.w",handle_blk16,
+  "dcb.l",handle_blk32,
+
+  "ds",handle_spc16,
+  "ds.b",handle_spc8,
+  "ds.w",handle_spc16,
+  "ds.l",handle_spc32,
+#else
+  "rb",handle_rs8,
+  "rw",handle_rs16,
+  "rl",handle_rs32,
+
+  "db",handle_d8,
+  "dw",handle_d16,
+  "dl",handle_d32,
+
+  "dcb",handle_blk8,
+  "dcw",handle_blk16,
+  "dcl",handle_blk32,
+
+  "ds",handle_spc8,
 #endif
-  "jumperr",0,handle_dummy_expr,
-  "jumpptr",0,handle_dummy_expr,
-  "mask2",0,eol,
-  "cnop",P|D,handle_cnop,
-  "align",0,handle_align,
-  "even",P|D,handle_even,
-  "odd",0,handle_odd,
-  "dc",P|D,handle_d16,
-  "db",0,handle_d8,
-  "dw",0,handle_d16,
-  "dl",0,handle_d32,
-  "dc.b",P|D,handle_d8,
-  "dc.w",P|D,handle_d16,
-  "dc.l",P|D,handle_d32,
-  "dc.q",P,handle_d64,
+
+/* TODO: possibly hex, data, and datasize directives?*/
+
 #if FLOAT_PARSER
-  "dc.s",P|D,handle_f32,
-  "dc.d",P|D,handle_f64,
-  "dc.x",P|D,handle_f96,
-  "dc.p",P|D,handle_fpd,
+  "ieee32",handle_single,
+  "ieee64",handle_double,
 #endif
-  "ds",P|D,handle_spc16,
-  "ds.b",P|D,handle_spc8,
-  "ds.w",P|D,handle_spc16,
-  "ds.l",P|D,handle_spc32,
-  "ds.q",P,handle_spc64,
-  "ds.s",P|D,handle_spc32,
-  "ds.d",P|D,handle_spc64,
-  "ds.x",P|D,handle_spc96,
-  "dx",P,handle_xspc16,
-  "dx.b",P,handle_xspc8,
-  "dx.w",P,handle_xspc16,
-  "dx.l",P,handle_xspc32,
-  "dx.q",P,handle_xspc64,
-  "dx.s",P,handle_xspc32,
-  "dx.d",P,handle_xspc64,
-  "dx.x",P,handle_xspc96,
-  "dcb",P|D,handle_blk16,
-  "dcb.b",P|D,handle_blk8,
-  "dcb.w",P|D,handle_blk16,
-  "dcb.l",P|D,handle_blk32,
-  "dcb.q",P,handle_blk64,
-  "dcb.s",P|D,handle_blk32,
-  "dcb.d",P|D,handle_blk64,
-  "dcb.x",P|D,handle_blk96,
-  "blk",P,handle_blk16,
-  "blk.b",P,handle_blk8,
-  "blk.w",P,handle_blk16,
-  "blk.l",P,handle_blk32,
-  "blk.q",P,handle_blk64,
-  "blk.s",P,handle_blk32,
-  "blk.d",P,handle_blk64,
-  "blk.x",P,handle_blk96,
-#ifdef VASM_CPU_M68K
-  "dr",0,handle_reldata16,
-  "dr.b",0,handle_reldata8,
-  "dr.w",0,handle_reldata16,
-  "dr.l",0,handle_reldata32,
-#endif
-  "end",P|D,handle_end,
-  "fail",P|D,handle_fail,
-  "assert",0,handle_assert,
-  "idnt",P|D,handle_idnt,
-  "ttl",P|D,handle_idnt,
-  "list",P|D,handle_list,
-  "module",P|D,handle_idnt,
-  "nolist",P|D,handle_nolist,
-  "plen",P|D,handle_plen,
-  "llen",P|D,handle_dummy_cexpr,
-  "page",P|D,handle_page,
-  "nopage",P|D,handle_nopage,
-  "spc",P|D,handle_dummy_cexpr,
-  "output",P|D,handle_output,
-  "symdebug",P,eol,
-  "dsource",P,handle_dsource,
-  "debug",P,handle_debug,
-  "msource",0,handle_msource,
-  "vdebug",0,handle_vdebug,
-  "comment",P|D,handle_comment,
-  "incdir",P|D,handle_incdir,
-  "include",P|D,handle_include,
-  "incbin",P|D,handle_incbin,
-  "image",0,handle_incbin,
-  "rept",P|D,handle_rept,
-  "endr",P|D,handle_endr,
-  "macro",P|D,handle_macro,
-  "endm",P|D,handle_endm,
-  "mexit",P|D,handle_mexit,
-  "rem",P,handle_rem,
-  "erem",P,handle_erem,
-  "ifb",0,handle_ifb,
-  "ifnb",0,handle_ifnb,
-  "ifc",P|D,handle_ifc,
-  "ifnc",P|D,handle_ifnc,
-  "ifd",P|D,handle_ifd,
-  "ifnd",P|D,handle_ifnd,
-  "ifmacrod",0,handle_ifmacrod,
-  "ifmacrond",0,handle_ifmacrond,
-  "ifeq",P|D,handle_ifeq,
-  "ifne",P|D,handle_ifne,
-  "ifgt",P|D,handle_ifgt,
-  "ifge",P|D,handle_ifge,
-  "iflt",P|D,handle_iflt,
-  "ifle",P|D,handle_ifle,
-  "ifmi",0,handle_iflt,
-  "ifpl",0,handle_ifge,
-  "if",P,handle_ifne,
-  "ifp1",0,handle_ifp1,
-  "if1",0,handle_ifp1,
-  "if2",0,handle_ifp2,
-  "else",P|D,handle_else,
-  "elseif",P|D,handle_else,
-  "elif",0,handle_elseif,
-  "endif",P|D,handle_endif,
-  "endc",P|D,handle_endif,
-  "rsreset",P|D,handle_rsreset,
-  "rsset",P|D,handle_rsset,
-  "rseven",0,handle_rseven,
-  "clrso",P,handle_rsreset,
-  "setso",P,handle_rsset,
-  "clrfo",P,handle_clrfo,
-  "setfo",P,handle_setfo,
-  "rs",P|D,handle_rs16,
-  "rs.b",P|D,handle_rs8,
-  "rs.w",P|D,handle_rs16,
-  "rs.l",P|D,handle_rs32,
-  "rs.q",P,handle_rs64,
-  "rs.s",P,handle_rs32,
-  "rs.d",P,handle_rs64,
-  "rs.x",P,handle_rs96,
-  "so",P,handle_rs16,
-  "so.b",P,handle_rs8,
-  "so.w",P,handle_rs16,
-  "so.l",P,handle_rs32,
-  "so.q",P,handle_rs64,
-  "so.s",P,handle_rs32,
-  "so.d",P,handle_rs64,
-  "so.x",P,handle_rs96,
-  "fo",P,handle_fo16,
-  "fo.b",P,handle_fo8,
-  "fo.w",P,handle_fo16,
-  "fo.l",P,handle_fo32,
-  "fo.q",P,handle_fo64,
-  "fo.s",P,handle_fo32,
-  "fo.d",P,handle_fo64,
-  "fo.x",P,handle_fo96,
-  "cargs",P|D,handle_cargs,
-  "echo",P,handle_echo,
-  "printt",0,handle_printt,
-  "printv",0,handle_printv,
-  "showoffset",P,handle_showoffset,
-  "auto",0,handle_noop,
-  "local",0,handle_local,
-  "inline",P,handle_inline,
-  "einline",P,handle_einline,
+
+  "org",handle_org,
+  "even",handle_even,
+  "cnop",handle_cnop,	/* TODO: change this to function more like it does in ASM68K*/
+/*"align",handle_align,*/	/* TODO: change this to function more more as expected; using bit count is weird */
+  "obj",handle_obj,
+  "objend",handle_objend,
+
+  "include",handle_include,
+  "incbin",handle_incbin,
+  
+  "if",handle_ifne,
+  "else",handle_else,
+  "elseif",handle_elseif,
+  "endif",handle_endif,
+  "endc",handle_endif,
+
+  "rept",handle_rept,
+  "endr",handle_endr,
+
+/* TODO: case/endcase, while/endw, and do/until directives*/
+
+/*"macro",handle_macro,*/
+  "endm",handle_endm,
+  "mexit",handle_mexit,
+
+/* TODO: shift, macros(?), pushp/popp, and purge(?) directives*/
+
+  "module",handle_module,
+  "modend",handle_modend,
+
+/* TODO: see if adding the local directive is worth it*/
+
+  "section",handle_section,
+  "pushs",handle_pushsect,
+  "pops",handle_popsect,
+
+/* TODO: see if adding the group directive is worth it*/
+ 
+  "xdef",handle_xdef,
+  "xref",handle_xref,
+  "global",handle_global,
+
+/* TODO: see if adding the public directive is worth it*/
+
+  "list",handle_list,		/* TODO: see if adding the list indicator functionality is worth it*/
+  "nolist",handle_nolist,
+  "fail",handle_fail,		/* TODO: try to handle this more like ASM68K*/
+  "end",handle_end,
+
+/* TODO: add the inform directive*/
+
+/* TODO: add 'foreign conditional' directives 
+  "ifb",handle_ifb,
+  "ifnb",handle_ifnb,
+  "ifc",handle_ifc,
+  "ifnc",handle_ifnc,
+  "ifd",handle_ifd,
+  "ifnd",handle_ifnd,
+  "ifmacrod",handle_ifmacrod,
+  "ifmacrond",handle_ifmacrond,
+  "ifeq",handle_ifeq,
+  "ifne",handle_ifne,
+  "ifgt",handle_ifgt,
+  "ifge",handle_ifge,
+  "iflt",handle_iflt,
+  "ifle",handle_ifle,
+  "ifmi",handle_iflt,
+  "ifpl",handle_ifge,
+*/
+
+/* TODO: add support for struct directives 
 #if STRUCT
-  "struct",0,handle_struct,
-  "estruct",0,handle_endstruct,
+  "struct",handle_struct,
+  "strend",handle_endstruct,
 #endif
-  "pushsection",0,handle_pushsect,
-  "popsection",0,handle_popsect,
+*/
 };
-#undef P
-#undef D
 
 size_t dir_cnt = sizeof(directives) / sizeof(directives[0]);
-
 
 /* checks for a valid directive, and return index when found, -1 otherwise */
 static int check_directive(char **line)
@@ -2167,7 +1881,7 @@ static int execute_struct(char *name,int name_len,char *s)
 }
 #endif
 
-
+/* TODO: equs, equr, and reg directives*/
 void parse(void)
 {
   char *s,*line,*inst,*labname;
@@ -2233,48 +1947,20 @@ void parse(void)
         if (!devpac_compat && !phxass_compat)
           label->flags |= symflags;
       }
-#if FLOAT_PARSER
-      else if (!strnicmp(s,"fequ.",5) && isspace((unsigned char)*(s+6))) {
-        s += 5;
-        label = fequate(labname,&s);
-      }
-      else if (phxass_compat &&
-               !strnicmp(s,"equ.",4) && isspace((unsigned char)*(s+5))) {
-        s += 4;
-        label = fequate(labname,&s);
-      }
-#endif
       else if (*s=='=') {
         ++s;
-        if (phxass_compat && *s=='.' && isspace((unsigned char)*(s+2))) {
-#if FLOAT_PARSER
-          ++s;
-          label = fequate(labname,&s);
-#else
-          syntax_error(7);  /* syntax error */
-#endif
-        }
-        else {
-          s = skip(s);
-          label = new_abs(labname,parse_expr_tmplab(&s));
-          if (!devpac_compat && !phxass_compat)
-            label->flags |= symflags;
-        }
+        s = skip(s);
+        label = new_abs(labname,parse_expr_tmplab(&s));
+        if (!devpac_compat && !phxass_compat)
+        	label->flags |= symflags;
       }
       else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
         /* SET allows redefinitions */
         s = skip(s+3);
         label = new_abs(labname,parse_expr_tmplab(&s));
       }
-      else if (offs_directive(s,"rs") || offs_directive(s,"so")) {
+      else if (offs_directive(s,"rs")) {
         label = new_setoffset(labname,&s,rs_name,1);
-      }
-      else if (offs_directive(s,"fo")) {
-        label = new_setoffset(labname,&s,fo_name,-1);
-      }
-      else if (!strnicmp(s,"ttl",3) && isspace((unsigned char)*(s+3))) {
-        s = skip(s+3);
-        setfilename(labname);
       }
       else if (!strnicmp(s,"macro",5) &&
                (isspace((unsigned char)*(s+5)) || *(s+5)=='\0'
@@ -2735,18 +2421,11 @@ int init_syntax(void)
   size_t i;
   symbol *sym;
   hashdata data;
-  int avail;
 
-  if (devpac_compat) avail = 1;
-  else if (phxass_compat) avail = 2;
-  else avail = 0;
-
-  dirhash = new_hashtable(0x1800);
+ dirhash = new_hashtable(0x1000);
   for (i=0; i<dir_cnt; i++) {
-    if ((directives[i].avail & avail) == avail) {
-      data.idx = i;
-      add_hashentry(dirhash,directives[i].name,data);
-    }
+    data.idx = i;
+    add_hashentry(dirhash,directives[i].name,data);
   }
   if (debug && dirhash->collisions)
     fprintf(stderr,"*** %d directive collisions!!\n",dirhash->collisions);
@@ -2756,8 +2435,10 @@ int init_syntax(void)
   carg1 = number_expr(1);        /* CARG start value for macro invocations */
   set_internal_abs(REPTNSYM,-1); /* reserve the REPTN symbol */
   sym = internal_abs(rs_name);
-  refer_symbol(sym,so_name);     /* SO is only an additional reference to RS */
+  /*
+  refer_symbol(sym,so_name);      SO is only an additional reference to RS
   internal_abs(fo_name);
+  */
   maxmacparams = allmp ? 35 : 9; /* 35: allow \a..\z macro parameters */
 
   if (!phxass_compat && !devpac_compat)
