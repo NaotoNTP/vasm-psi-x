@@ -315,16 +315,16 @@ static symbol *new_setoffset(char *equname,char **s,char *symname,int dir)
         size = 2;
         break;
       case 'l':
-      case 's':
+    /*case 's':*/
         size = 4;
         break;
-      case 'q':
+    /*case 'q':
       case 'd':
         size = 8;
         break;
       case 'x':
         size = 12;
-        break;
+        break;*/
       default:
         syntax_error(1);  /* invalid extension */
         break;
@@ -623,48 +623,51 @@ static void handle_objend(char *s)
 }
 
 
-static void do_bind(char *s,unsigned bind)
+static void do_binding(char *s,int bind)
 {
   symbol *sym;
   strbuf *name;
 
-  do {
-    s = skip(s);
-    if (!(name = parse_identifier(0,&s))) {
-      syntax_error(10);  /* identifier expected */
+  while (1) {
+    if (!(name=parse_identifier(0,&s)))
       return;
-    }
     sym = new_import(name->str);
-    if ((sym->flags & (EXPORT|WEAK|NEAR)) != 0 &&
-        (sym->flags & (EXPORT|WEAK|NEAR)) != (bind & (EXPORT|WEAK|NEAR))) {
+    if (sym->flags&(EXPORT|WEAK|LOCAL)!=0 &&
+        sym->flags&(EXPORT|WEAK|LOCAL)!=bind)
       general_error(62,sym->name,get_bind_name(sym)); /* binding already set */
-    }
-    else {
+    else
       sym->flags |= bind;
       if ((bind & XREF)!=0 && sym->type!=IMPORT)
         general_error(85,sym->name);  /* xref must not be defined already */
-    }
     s = skip(s);
+    if (*s != ',')
+      break;
+    s = skip(s+1);
   }
-  while (*s++ == ',');
+  eol(s);
 }
 
 
 static void handle_xref(char *s)
 {
-  do_bind(s,EXPORT|XREF);
+  do_binding(s,EXPORT|XREF);
 }
 
 
 static void handle_xdef(char *s)
 {
-  do_bind(s,EXPORT|XDEF);
+  do_binding(s,EXPORT|XDEF);
 }
 
 
 static void handle_global(char *s)
 {
-  do_bind(s,EXPORT);
+  do_binding(s,EXPORT);
+}
+
+static void handle_local(char *s)
+{
+  do_binding(s,LOCAL);
 }
 
 /*
@@ -672,7 +675,6 @@ static void handle_weak(char *s)
 {
   do_bind(s,WEAK);
 }
-
 
 static void handle_nref(char *s)
 {
@@ -1072,7 +1074,6 @@ static void handle_include(char *s)
   }
 }
 
-
 static void handle_incbin(char *s)
 {
   strbuf *name;
@@ -1120,6 +1121,20 @@ static void handle_endm(char *s)
 static void handle_mexit(char *s)
 {
   leave_macro();
+}
+
+static void handle_purge(char *s)
+{
+  strbuf *name;
+
+  while (name = parse_identifier(0,&s)) {
+    undef_macro(name->str);
+    s = skip(s);
+    if (*s != ',')
+      break;
+    s = skip(s+1);
+  }
+  eol(s);
 }
 
 #if STRUCT
@@ -1376,10 +1391,12 @@ static void handle_rsset(char *s)
   new_abs(rs_name,parse_expr_tmplab(&s));
 }
 
+/*
 static void handle_rseven(char *s)
 {
   setoffset_align(rs_name,1,2);
 }
+*/
 
 /*
 static void handle_clrfo(char *s)
@@ -1518,14 +1535,6 @@ static void handle_echo(char *s)
 }
 */
 
-/*
-static void handle_local(char *s)
-{
-  sprintf(mod_lab_name,MODLABFMT,local_id++);
-  set_last_global_label(mystrdup(mod_lab_name));
-}
-*/
-
 static void handle_module(char *s)
 {
   const char *last;
@@ -1582,7 +1591,7 @@ struct {
 
   "rsset",handle_rsset,	
   "rsreset",handle_rsreset,
-  "rseven",handle_rseven,
+/*"rseven",handle_rseven,*/
 
 #if defined(VASM_CPU_M68K)
   "rs",handle_rs16,
@@ -1650,13 +1659,12 @@ struct {
 /*"macro",handle_macro,*/
   "endm",handle_endm,
   "mexit",handle_mexit,
+  "purge",handle_purge,
 
-/* TODO: shift, macros(?), pushp/popp, and purge(?) directives*/
+/* TODO: shift, macros(?), and pushp/popp directives*/
 
   "module",handle_module,
   "modend",handle_modend,
-
-/* TODO: see if adding the local directive is worth it*/
 
   "section",handle_section,
   "pushs",handle_pushsect,
@@ -1881,7 +1889,7 @@ static int execute_struct(char *name,int name_len,char *s)
 }
 #endif
 
-/* TODO: equs, equr, and reg directives*/
+/* TODO: equs, and reg directives*/
 void parse(void)
 {
   char *s,*line,*inst,*labname;
