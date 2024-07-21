@@ -89,11 +89,18 @@ char *skip(char *s)
   return s;
 }
 
+/* check for end of line, issue error, if not */
 void eol(char *s)
 {
-  s = skip(s);
-  if (!ISEOL(s))
-    syntax_error(6);
+  if (allow_spaces) {
+    s = skip(s);
+    if (!ISEOL(s))
+      syntax_error(6);
+  }
+  else {
+    if (!ISEOL(s) && !isspace((unsigned char)*s))
+      syntax_error(6);
+  }
 }
 
 char *exp_skip(char *s)
@@ -303,6 +310,162 @@ strbuf *get_local_label(int n,char **start)
   }
 
   return name;
+}
+
+/* check if 'name' is a known macro, then execute macro context */
+int my_execute_macro(char *name,int name_len,char **q,int *q_len,int nq,
+                  char *s)
+{
+  macro *m;
+  source *src;
+  struct macarg *ma;
+  int n;
+  struct namelen param,arg;
+#if MAX_QUALIFIERS>0
+  char *defq[MAX_QUALIFIERS];
+  int defq_len[MAX_QUALIFIERS];
+#endif
+#ifdef NO_MACRO_QUALIFIERS
+  char *nptr = name;
+
+  /* Instruction qualifiers are ignored for macros on this architecture.
+     So we have to determine the length of the mnemonic again. */
+  while (*nptr && !isspace((unsigned char)*nptr))
+    nptr++;
+  name_len = nptr - name;
+  nq = 0;
+#endif
+
+  if ((m = find_macro(name,name_len)) == NULL)
+    return 0;
+
+  /* it's a macro: read arguments and execute it */
+  if (m->recursions >= maxmacrecurs) {
+    general_error(56,maxmacrecurs);  /* maximum macro recursions reached */
+    return 0;
+  }
+  m->recursions++;
+
+  src = new_source(m->name,NULL,m->text,m->size);
+  src->macro = m;
+  src->defsrc = m->defsrc;
+  src->defline = m->defline;
+  src->argnames = m->argnames;
+  src->srcdebug = m->srcdebug;
+
+#if MAX_QUALIFIERS>0
+  /* remember given qualifiers, or use the cpu's default qualifiers */
+  for (n=0; n<nq; n++) {
+    src->qual[n] = q[n];
+    src->qual_len[n] = q_len[n];
+  }
+  nq = set_default_qualifiers(defq,defq_len);
+  for (; n<nq; n++) {
+    src->qual[n] = defq[n];
+    src->qual_len[n] = defq_len[n];
+  }
+  src->num_quals = nq;
+#endif
+
+  /* fill in the defaults first */
+  for (n=0,ma=m->defaults; n<maxmacparams; n++) {
+    if (ma != NULL) {
+      src->param[n] = ma->arglen==MACARG_REQUIRED ? NULL : ma->argname;
+      src->param_len[n] = ma->arglen==MACARG_REQUIRED ? 0 : ma->arglen;
+      ma = ma->argnext;
+    }
+    else {
+      src->param[n] = emptystr;
+      src->param_len[n] = 0;
+    }
+  }
+    
+  /* read macro arguments from operand field */
+  s = skip(s);
+  n = 0;
+  while (!ISEOL(s) && n<maxmacparams) {
+    if (n>=0 && m->vararg==n) {
+      /* Varargs: take rest of line as argument */
+      char *start = s;
+      char *end = s;
+
+      while (!ISEOL(s)) {
+        s++;
+        if (!isspace((unsigned char)*s))
+          end = s;  /* remember last non-blank character */
+      }
+      src->param[n] = start;
+      src->param_len[n] = end - start;
+      n++;
+      break;
+    }
+    else if ((s = parse_macro_arg(m,s,&param,&arg)) != NULL) {
+      if (arg.len) {
+        /* argument selected by keyword */
+        if (n <= 0) {
+          n = find_macarg_name(src,arg.name,arg.len);
+          if (n >= 0) {
+            src->param[n] = param.name;
+            src->param_len[n] = param.len;
+          }
+          else
+            general_error(72);  /* undefined macro argument name */
+          n = -1;
+        }
+        else
+          general_error(71);  /* cannot mix positional and keyword arguments */
+      }
+      else {
+        /* argument selected by position n */
+        if (n >= 0) {
+          if (param.len > 0) {
+            src->param[n] = param.name;
+            src->param_len[n] = param.len;
+          }
+          n++;
+        }
+        else
+          general_error(71);  /* cannot mix positional and keyword arguments */
+      }
+    }
+    else
+      break;
+
+    s = skip(s);
+    if (!(s = MACRO_PARAM_SEP(s)))  /* check for separator between params. */
+      break;
+  }
+
+  if (n == 0) {
+	src->num_params = 1;      /* >=0 indicates macro source */
+  } else {
+	src->num_params = n;      /* >=0 indicates macro source */
+  }
+
+  if (m->num_argnames >= 0) {
+    if (n > m->num_argnames)
+      general_error(87,m->num_argnames);  /* additional macro arguments ignored */
+    n = m->num_argnames;  /* named arguments define number of args */
+	src->num_params = n;      /* >=0 indicates macro source */
+  }
+  if (n > maxmacparams) {
+    general_error(27,maxmacparams);  /* number of args exceeded */
+    n = maxmacparams;
+	src->num_params = n;      /* >=0 indicates macro source */
+  }
+
+  for (n=0; n<maxmacparams; n++) {
+    if (src->param[n] == NULL) {
+      /* required, but missing */
+      src->param[n] = emptystr;
+      src->param_len[n] = 0;
+      general_error(73,n+1);  /* required macro argument was left out */
+    }
+  }
+
+  EXEC_MACRO(src);          /* syntax-module dependent initializations */
+  cur_src = src;            /* execute! */
+  return 1;
 }
 
 /*
@@ -610,7 +773,7 @@ static void handle_cnop(char *s)
 
 static void handle_even(char *s)
 {
-  do_alignment(2,number_expr(0),1,NULL);
+  do_alignment(2,number_expr(0),0,NULL);
 }
 
 static void handle_align(char *s)
@@ -1432,7 +1595,6 @@ void parse(void)
       /* skip source until ELSE or ENDIF */
       int idx;
 
-      s = skip(s);
       (void)parse_label_or_pc(&s);
       idx = check_directive(&s);
       if (idx >= 0) {
@@ -1539,7 +1701,7 @@ void parse(void)
       syntax_error(2);  /* no space before operands */
     s = skip(s);
 
-    if (execute_macro(inst,inst_len,ext,ext_len,ext_cnt,s))
+    if (my_execute_macro(inst,inst_len,ext,ext_len,ext_cnt,s))
       continue;
     if (execute_struct(inst,inst_len,s))
       continue;
@@ -1579,7 +1741,7 @@ void parse(void)
 
     if (ip) {
 #if MAX_OPERANDS>0
-      if (ip->op[0]==NULL && op_cnt!=0)
+      if (allow_spaces && ip->op[0]==NULL && op_cnt!=0)
         syntax_error(6);  /* mnemonic without operands has tokens in op.field */
 #endif
       add_atom(0,new_inst_atom(ip));
@@ -1661,20 +1823,16 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     }
     else if (*s == '.') {
       /* \.: copy qualifier (dot-size) */
-      if (dlen > 1) {
-        *d++ = '.';
-        if ((nc = copy_macro_qual(src,0,d,dlen)) >= 0)
-          nc++;
-        s++;
-      }
-      else
-        nc = -1;
+      nc = copy_macro_qual(src,0,d,dlen);
+      s++;
     }
     else if (*s=='?' && dlen>=1) {
-    /* \?argname : 1 when argument defined, 0 when missing or empty */
-      if ((nc = macro_arg_defined(src,s+1,end,d)) >= 0)
-        s = end;
-    }
+      if ((end = skip_identifier(s+1)) != NULL) {
+        /* \?argname : 1 when argument defined, 0 when missing or empty */
+        if ((nc = macro_arg_defined(src,s+1,end,d)) >= 0)
+          s = end;
+      }
+	}
 	/*	TODO: macro-scope symobls \{macsym} -> macsym_nnnnnn$
     else if (*s=='{' && (end = skip_identifier(s+1))!=NULL) {
       if (*end == '}') {
@@ -1718,6 +1876,7 @@ int init_syntax()
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
+  allow_spaces = 1;
   esc_sequences = 1;
 
   return 1;
