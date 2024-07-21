@@ -56,7 +56,7 @@ static struct namelen endcmnt_dirlist[] = {
   { 7,"endcmnt" }, { 0,0 }
 };
 
-static int parse_end;
+static int parse_end = 0;
 
 /* options */
 static int align_data;
@@ -773,7 +773,7 @@ static void handle_cnop(char *s)
 
 static void handle_even(char *s)
 {
-  do_alignment(2,number_expr(0),0,NULL);
+  do_alignment(2,number_expr(0),1,NULL);
 }
 
 static void handle_align(char *s)
@@ -855,6 +855,29 @@ static void handle_ifd(char *s)
 static void handle_ifnd(char *s)
 {
   ifdef(s,0);
+}
+
+static void ifmacro(char *s,int b)
+{
+  char *name = s;
+  int result;
+
+  if (s = skip_identifier(s)) {
+    result = find_macro(name,s-name) != NULL;
+    cond_if(result == b);
+  }
+  else
+    syntax_error(10);  /*identifier expected */
+}
+
+static void handle_ifmacrod(char *s)
+{
+  ifmacro(s,1);
+}
+
+static void handle_ifmacrond(char *s)
+{
+  ifmacro(s,0);
 }
 
 static void handle_ifb(char *s)
@@ -1043,20 +1066,6 @@ static void handle_endr(char *s)
 /*
  *	Macro Directives
  */
-static void handle_macro(char *s)
-{
-  strbuf *name;
-
-  if (name = parse_identifier(0,&s)) {
-    s = skip(s);
-    if (ISEOL(s))
-      s = NULL;  /* no named arguments */
-    new_macro(name->str,macro_dirlist,endm_dirlist,s);
-  }
-  else
-    syntax_error(10);  /* identifier expected */
-}
-
 static void handle_endm(char *s)
 {
   syntax_error(12,"endm","macro");  /* unexpected endm without macro */
@@ -1271,8 +1280,7 @@ static void handle_fail(char *s)
 
 static void handle_end(char *s)
 {
-  end_source(cur_src);
-  eol(s);
+  parse_end = 1;
 }
 
 struct {
@@ -1356,7 +1364,6 @@ struct {
   "rept",handle_rept,
   "endr",handle_endr,
 
-  "macro",handle_macro,
   "endm",handle_endm,
   "exitm",handle_exitm,
   "purge",handle_purge,
@@ -1885,7 +1892,9 @@ int init_syntax()
 
 int syntax_defsect(void)
 {
-  return 0;  /* default to .text */
+  defsectname = code_name;
+  defsecttype = code_type;
+  return 1;
 }
 
 
