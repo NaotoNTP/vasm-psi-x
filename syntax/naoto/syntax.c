@@ -1215,8 +1215,7 @@ struct {
   "end",handle_end,
 };
 
-int dir_cnt = sizeof(directives) / sizeof(directives[0]);
-
+size_t dir_cnt = sizeof(directives) / sizeof(directives[0]);
 
 /* checks for a valid directive, and return index when found, -1 otherwise */
 static int check_directive(char **line)
@@ -1225,23 +1224,16 @@ static int check_directive(char **line)
   hashdata data;
 
   s = skip(*line);
-  if (!ISIDSTART(*s) && *s!='=')
+  if (!ISIDSTART(*s))
     return -1;
   name = s++;
   while (ISIDCHAR(*s) || *s=='.')
     s++;
-  if (*name=='.') {  /* leading dot is optional for all directives */
-    name++;
-    dotdirs = 1;
-  }
-  else
-    dotdirs = 0;
   if (!find_namelen_nc(dirhash,name,s-name,&data))
     return -1;
   *line = s;
   return data.idx;
 }
-
 
 /* Handles assembly directives; returns non-zero if the line
    was a directive. */
@@ -1275,6 +1267,105 @@ static int oplen(char *e,char *s)
   return e-s;
 }
 
+/* When a structure with this name exists, insert its atoms and either
+   initialize with new values or accept its default values. */
+static int execute_struct(char *name,int name_len,char *s)
+{
+  section *str;
+  atom *p;
+
+  str = find_structure(name,name_len);
+  if (str == NULL)
+    return 0;
+
+  for (p=str->first; p; p=p->next) {
+    atom *new;
+    char *opp;
+    int opl;
+
+    if (p->type==DATA || p->type==SPACE || p->type==DATADEF) {
+      opp = s = skip(s);
+      s = skip_operand(s);
+      opl = s - opp;
+
+      if (opl > 0) {
+        /* initialize this atom with a new expression */
+
+        if (p->type == DATADEF) {
+          /* parse a new data operand of the declared bitsize */
+          operand *op;
+
+          op = new_operand();
+          if (parse_operand(opp,opl,op,
+                            DATA_OPERAND(p->content.defb->bitsize))) {
+            new = new_datadef_atom(p->content.defb->bitsize,op);
+            new->align = p->align;
+            add_atom(0,new);
+          }
+          else
+            syntax_error(8);  /* invalid data operand */
+        }
+        else if (p->type == SPACE) {
+          /* parse the fill expression for this space */
+          new = clone_atom(p);
+          new->content.sb = new_sblock(p->content.sb->space_exp,
+                                       p->content.sb->size,
+                                       parse_expr_tmplab(&opp));
+          new->content.sb->space = p->content.sb->space;
+          add_atom(0,new);
+        }
+        else {
+          /* parse constant data - probably a string, or a single constant */
+          dblock *db;
+
+          db = new_dblock();
+          db->size = p->content.db->size;
+          db->data = db->size ? mycalloc(db->size) : NULL;
+          if (db->data) {
+            if (*opp=='\"' || *opp=='\'') {
+              dblock *strdb;
+
+              strdb = parse_string(&opp,*opp,8);
+              if (strdb->size) {
+                if (strdb->size > db->size)
+                  syntax_error(24,strdb->size-db->size);  /* cut last chars */
+                memcpy(db->data,strdb->data,
+                       strdb->size > db->size ? db->size : strdb->size);
+                myfree(strdb->data);
+              }
+              myfree(strdb);
+            }
+            else {
+              taddr val = parse_constexpr(&opp);
+              void *p;
+
+              if (db->size > sizeof(taddr) && BIGENDIAN)
+                p = db->data + db->size - sizeof(taddr);
+              else
+                p = db->data;
+              setval(BIGENDIAN,p,sizeof(taddr),val);
+            }
+          }
+          add_atom(0,new_data_atom(db,p->align));
+        }
+      }
+      else {
+        /* empty: use default values from original atom */
+        add_atom(0,clone_atom(p));
+      }
+
+      s = skip(s);
+      if (*s == ',')
+        s++;
+    }
+    else if (p->type == INSTRUCTION)
+      syntax_error(23);  /* skipping instruction in struct init */
+
+    /* other atoms are silently ignored */
+  }
+
+  return 1;
+}
 
 static char *parse_label_or_pc(char **start)
 {
@@ -1324,7 +1415,7 @@ static char *parse_label_or_pc(char **start)
 
 void parse(void)
 {
-  char *s,*line,*inst;
+  char *s,*line,*inst,*labname;
   char *ext[MAX_QUALIFIERS?MAX_QUALIFIERS:1];
   char *op[MAX_OPERANDS];
   int ext_len[MAX_QUALIFIERS?MAX_QUALIFIERS:1];
@@ -1336,11 +1427,12 @@ void parse(void)
 	if (parse_end)
       continue;
 
+    s = line;
     if (!cond_state()) {
       /* skip source until ELSE or ENDIF */
       int idx;
 
-      s = line;
+      s = skip(s);
       (void)parse_label_or_pc(&s);
       idx = check_directive(&s);
       if (idx >= 0) {
@@ -1358,7 +1450,6 @@ void parse(void)
       continue;
     }
 
-    s = skip(line);
     if (labname = parse_label_or_pc(&s)) {
       /* we have found a global or local label, or current-pc character */
       symbol *label;
@@ -1449,6 +1540,8 @@ void parse(void)
     s = skip(s);
 
     if (execute_macro(inst,inst_len,ext,ext_len,ext_cnt,s))
+      continue;
+    if (execute_struct(inst,inst_len,s))
       continue;
 
     /* read operands, terminated by comma or blank (unless in parentheses) */
@@ -1621,6 +1714,7 @@ int init_syntax()
 
   cond_init();
   set_internal_abs(REPTNSYM,-1); /* reserve the REPTN symbol */
+  internal_abs(rs_name);
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
