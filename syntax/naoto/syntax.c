@@ -436,22 +436,17 @@ int my_execute_macro(char *name,int name_len,char **q,int *q_len,int nq,
       break;
   }
 
-  if (n == 0) {
-	src->num_params = 1;      /* >=0 indicates macro source */
-  } else {
-	src->num_params = n;      /* >=0 indicates macro source */
-  }
+	src->num_params = n + 1;      /* set the number of params to the number of args passed this macro call + 1 (>=0 indicates macro source) */
 
   if (m->num_argnames >= 0) {
     if (n > m->num_argnames)
       general_error(87,m->num_argnames);  /* additional macro arguments ignored */
     n = m->num_argnames;  /* named arguments define number of args */
-	src->num_params = n;      /* >=0 indicates macro source */
   }
   if (n > maxmacparams) {
     general_error(27,maxmacparams);  /* number of args exceeded */
     n = maxmacparams;
-	src->num_params = n;      /* >=0 indicates macro source */
+	src->num_params = n + 1;      /* >=0 indicates macro source */
   }
 
   for (n=0; n<maxmacparams; n++) {
@@ -1823,7 +1818,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     else if (*s == '#') {
       /* \# : insert number of parameters */
       if (dlen > 3) {
-        nc = sprintf(d,"%d",src->num_params);
+        nc = sprintf(d,"%d",(src->num_params - 1));
         s++;
       }
       else nc = -1;
