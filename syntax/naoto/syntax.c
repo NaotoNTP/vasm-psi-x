@@ -1749,7 +1749,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       else nc = -1;
     }
     else if (*s == '.') {
-      /* \.: copy qualifier (dot-size) */
+      /* \. : copy qualifier (dot-size) */
       nc = copy_macro_qual(src,0,d,dlen);
       s++;
     }
