@@ -1690,6 +1690,7 @@ char *parse_macro_arg(struct macro *m,char *s,
   return s;
 }
 
+
 /* count the number of macro args that were passed this call */
 int count_passed_macargs(source *src)
 {
@@ -1704,9 +1705,28 @@ int count_passed_macargs(source *src)
 
 
 /* write 0 to buffer when macro argument is missing or empty, 1 otherwise */
-static int macro_arg_defined(source *src,char *argstart,char *argend,char *d)
+static int macro_arg_defined(source *src,char *argstart,char *argend,char *d,int type)
 {
-  int n = find_macarg_name(src,argstart,argend-argstart);
+  int n;
+
+  if (type) {
+    n = find_macarg_name(src,argstart,argend-argstart);
+  }
+  else {
+	n = *(argstart) - '0';
+
+	if (n == 0) {
+#if MAX_QUALIFIERS > 0
+    *d++ = ((src->qual_len[0] > 0) ? '1' : '0');
+#else
+    *d++ = '0';
+#endif
+      return 1;		
+	} 
+	else {
+	  n--;
+	}
+  }
 
   if (n >= 0) {
     /* valid argument name */
@@ -1766,11 +1786,19 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       s++;
     }
     else if (*s=='?' && dlen>=1) {
-      if ((end = skip_identifier(s+1)) != NULL) {
-        /* \?argname : 1 when argument defined, 0 when missing or empty */
-        if ((nc = macro_arg_defined(src,s+1,end,d)) >= 0)
+	  /* \?n : check if numeric parameter is defined */
+	  if (isdigit((unsigned char)*(s+1)) && dlen > 3) {
+	    if ((nc = macro_arg_defined(src,s+1,s+2,d,0)) >= 0)
+          s += 2;
+      }
+      else if ((end = skip_identifier(s+1)) != NULL) {
+        /* \?argname : insert named parameter n length */
+        if ((nc = macro_arg_defined(src,s+1,end,d,1)) >= 0)
           s = end;
       }
+	  else {
+        nc = -1;
+	  }
 	}
 	/*	TODO: macro-scope symobls \{macsym} -> macsym_nnnnnn$
     else if (*s=='{' && (end = skip_identifier(s+1))!=NULL) {
@@ -1778,6 +1806,14 @@ int expand_macro(source *src,char **line,char *d,int dlen)
 		
     }
 	*/
+    else if (isdigit((unsigned char)*s)) {
+      /* \0..\9 : insert macro parameter 0..9 */
+      if (*s == '0')
+        nc = copy_macro_qual(src,0,d,dlen);
+      else
+        nc = copy_macro_param(src,*s-'1',d,dlen);
+      s++;
+    }
     else if ((end = skip_identifier(s)) != NULL) {
       if ((n = find_macarg_name(src,s,end-s)) >= 0) {
         /* \argname: insert named macro parameter n */
