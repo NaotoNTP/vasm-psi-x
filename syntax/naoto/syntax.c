@@ -1690,6 +1690,18 @@ char *parse_macro_arg(struct macro *m,char *s,
   return s;
 }
 
+/* count the number of macro args that were passed this call */
+int count_passed_macargs(source *src)
+{
+  int i, n = 0;
+
+  for (i = 0; i < maxmacparams; i++) {
+    if (src->param_len[i] > 0) n++;
+  }
+
+  return n;
+}
+
 
 /* write 0 to buffer when macro argument is missing or empty, 1 otherwise */
 static int macro_arg_defined(source *src,char *argstart,char *argend,char *d)
@@ -1743,7 +1755,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     else if (*s == '#') {
       /* \# : insert number of parameters */
       if (dlen > 3) {
-        nc = sprintf(d,"%d",(src->num_params));
+        nc = sprintf(d,"%d",count_passed_macargs(src));
         s++;
       }
       else nc = -1;
