@@ -441,12 +441,11 @@ int my_execute_macro(char *name,int name_len,char **q,int *q_len,int nq,
   if (m->num_argnames >= 0) {
     if (n > m->num_argnames)
       general_error(87,m->num_argnames);  /* additional macro arguments ignored */
-    n = m->num_argnames;  /* named arguments define number of args */
+    n = m->num_argnames + 1;  /* named arguments define number of args */
   }
-  if (n > maxmacparams) {
+  if (n > (maxmacparams + 1)) {
     general_error(27,maxmacparams);  /* number of args exceeded */
-    n = maxmacparams;
-	src->num_params = n + 1;      /* >=0 indicates macro source */
+	src->num_params = maxmacparams + 1;      /* >=0 indicates macro source */
   }
 
   for (n=0; n<maxmacparams; n++) {
@@ -825,6 +824,7 @@ static void handle_incbin(char *s)
 /*
  *	Conditional Directives
  */
+
 static void ifdef(char *s,int b)
 {
   char *name;
@@ -873,6 +873,33 @@ static void handle_ifmacrod(char *s)
 static void handle_ifmacrond(char *s)
 {
   ifmacro(s,0);
+}
+
+static void ifc(char *s,int b)
+{
+  strbuf *str1,*str2;
+  int result;
+
+  str1 = parse_name(0,&s);
+  if (str1!=NULL && *s==',') {
+    s = skip(s+1);
+    if (str2 = parse_name(1,&s)) {
+      result = strcmp(str1->str,str2->str) == 0;
+      cond_if(result == b);
+      return;
+    }
+  }
+  syntax_error(5);  /* missing operand */
+}
+
+static void handle_ifc(char *s)
+{
+  ifc(s,1);
+}
+
+static void handle_ifnc(char *s)
+{
+  ifc(s,0);
 }
 
 static void handle_ifb(char *s)
@@ -958,6 +985,43 @@ static void handle_elseif(char *s)
 static void handle_endif(char *s)
 {
   cond_endif();
+}
+
+/* Move line_ptr to the end of the string if the parsing should stop,
+   otherwise move line_ptr after the iif directive and the expression
+   so the parsing can continue and return the new line_ptr.
+   The string is never modified. */
+static char *handle_iif(char *line_ptr)
+{
+  if (strnicmp(line_ptr,"iif",3) == 0 &&
+      isspace((unsigned char)line_ptr[3])) {
+    char *expr_copy,*expr_end;
+    int condition;
+    size_t expr_len;
+
+    line_ptr += 3;
+
+    /* Move the line ptr to the beginning of the iif expression. */
+    line_ptr = skip(line_ptr);
+
+    /* As eval_ifexp() may modify the input string, duplicate
+       it for the case when the parsing should continue. */
+    expr_copy = mystrdup(line_ptr);
+    expr_end = expr_copy;
+    condition = eval_ifexp(&expr_end,1);
+    expr_len = expr_end - expr_copy;
+    myfree(expr_copy);
+
+    if (condition) {
+      /* Parsing should continue after the expression, from the next field. */
+      line_ptr += expr_len;
+      line_ptr = skip(line_ptr);
+    } else {
+      /* Parsing should stop, move ptr to the end of the line. */
+      line_ptr += strlen(line_ptr);
+    }
+  }
+  return line_ptr;
 }
 
 /*
@@ -1332,20 +1396,27 @@ struct {
   "include",handle_include,
   "incbin",handle_incbin,
 
-  "ifdef",handle_ifd,
-  "ifndef",handle_ifnd,
-  "ifb",handle_ifb,
-  "ifnb",handle_ifnb,
   "if",handle_ifne,
+  "else",handle_else,
+  "elseif",handle_elseif,
+  "endif",handle_endif,
+
+  "ifdef",handle_ifd,
+  "ifnodef",handle_ifnd,
+  "ifmac",handle_ifmacrod,
+  "ifnomac",handle_ifmacrond,
+
+  "ifstr",handle_ifnb,
+  "ifnostr",handle_ifb,
+  "ifstreq",handle_ifc,
+  "ifstrne",handle_ifnc,  
+
   "ifeq",handle_ifeq,
   "ifne",handle_ifne,
   "ifgt",handle_ifgt,
   "ifge",handle_ifge,
   "iflt",handle_iflt,
   "ifle",handle_ifle,
-  "else",handle_else,
-  "elseif",handle_elseif,
-  "endif",handle_endif,
 
   "comment",handle_comment,
   "endcmnt",handle_endcmnt,
@@ -1620,6 +1691,8 @@ void parse(void)
 
       s = skip(s);
 
+      s = handle_iif(s);
+
       if (!strnicmp(s,"equ",3) && isspace((unsigned char)*(s+3))) {
         s = skip(s+3);
         label = new_equate(labname,parse_expr_tmplab(&s));
@@ -1673,6 +1746,8 @@ void parse(void)
 	s = skip(s);
     if (*s==commentchar)
       continue;
+
+    s = handle_iif(s);
 
     s = parse_cpu_special(s);
     if (ISEOL(s))
