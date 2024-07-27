@@ -1806,7 +1806,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
           s += 2;
       }
       else if ((end = skip_identifier(s+1)) != NULL) {
-        /* \?argname : insert named parameter n length */
+        /* \?argname : check if named parameter is defined */
         if ((nc = macro_arg_defined(src,s+1,end,d,1)) >= 0)
           s = end;
       }
