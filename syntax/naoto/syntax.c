@@ -77,7 +77,7 @@ static char inl_lab_name[8];
 
 int isidchar(char c)
 {
-  if (isalnum((unsigned char)c) || c=='_' ||  c=='.')
+  if (isalnum((unsigned char)c) || c=='_')
     return 1;
   return 0;
 }
@@ -274,22 +274,24 @@ strbuf *get_local_label(int n,char **start)
   s = *start;
   p = skip_local(s);
 
-  if (p!=NULL && *p=='.' && ISIDCHAR(*(p+1)) &&
-      ISIDSTART(*s) && *s!='.' && *(p-1)!='$') {
-    /* skip local part of global.local label */
+  if (p!=NULL && *p=='.' && ISIDSTART(*s) && *s!=local_char && *(p-1)!='$') {
+    /* skip local part of global:local label */
     s = p + 1;
-    p = skip_local(p);
-    name = make_local_label(n,*start,(s-1)-*start,s,p-s);
-    *start = skip(p);
+    if (p = skip_local(s)) {
+      name = make_local_label(n,*start,(s-1)-*start,s,*(p-1)=='$'?(p-1)-s:p-s);
+      *start = skip(p);
+    }
+    else
+      return NULL;
   }
-  else if (p!=NULL && p>(s+1) && *s=='.') {  /* .label */
+  else if (p!=NULL && p>(s+1) && *s==local_char) {  /* .label */
     s++;
     name = make_local_label(n,NULL,0,s,p-s);
     *start = skip(p);
   }
   else if (p!=NULL && p>s && *p=='$') { /* label$ */
     p++;
-    name = make_local_label(n,NULL,0,s,p-s);
+    name = make_local_label(n,NULL,0,s,(p-1)-s);
     *start = skip(p);
   }
   else if (*s++ == ':') {
@@ -1579,6 +1581,18 @@ void parse(void)
         if (!(buf = parse_identifier(0,&s)))
           ierror(0);
         new_macro(buf->str,macro_dirlist,endm_dirlist,params);
+        continue;
+      }
+	  else if (!strnicmp(s,"struct",6) &&
+               (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
+                || *(s+6)==commentchar)) {
+        strbuf *buf;
+
+        s = line;
+        if (!(buf = parse_identifier(0,&s)))
+          ierror(0);
+        if (new_structure(buf->str))
+          current_section->flags |= LABELS_ARE_LOCAL;
         continue;
       }
 #ifdef PARSE_CPU_LABEL
