@@ -2,7 +2,7 @@
 /* (c) in 2024 by 'Naoto' */
 
 #include "vasm.h"
-/*#include "error.h"*/
+#include "error.h"
 
 /* The syntax module parses the input (read_next_line), handles
    assembly-directives (section, data-storage etc.) and parses
@@ -1107,69 +1107,6 @@ static void handle_export(char *s)
 /*
  *	Miscellaneous Directives
  */
-static void handle_print(char *s)
-{
-  while (!ISEOL(s)) {
-    if (*s == '\"') {
-      size_t len;
-      char *txt;
-
-      skip_string(s,'\"',&len);
-      if (len > 0) {
-        txt = mymalloc(len+1);
-        s = read_string(txt,s,'\"',8);
-        txt[len] = '\0';
-        add_or_save_atom(new_text_atom(txt));
-      }
-    }
-    else {
-      int type = PEXP_HEX;
-      int size = 16;
-
-      while (*s == '/') {
-        /* format character */
-        char f;
-
-        s = skip(s+1);
-        f = tolower((unsigned char)*s);
-        if (s = skip_identifier(s)) {
-          switch (f) {
-            case 'x':
-              type = PEXP_HEX;
-              break;
-            case 'd':
-              type = PEXP_SDEC;
-              break;
-            case 'u':
-              type = PEXP_UDEC;
-              break;
-            case 'w':
-              size = 16;
-              break;
-            case 'l':
-              size = 32;
-              break;
-            default:
-              syntax_error(7,f);  /* unknown print format flag */
-              break;
-          }
-        }
-        else {
-          syntax_error(9);  /* print format corrupted */
-          break;
-        }
-        s = skip(s);
-      }
-      add_or_save_atom(new_expr_atom(parse_expr(&s),type,size));
-    }
-    s = skip(s);
-    if (*s != ',')
-      break;
-    s = skip(s+1);
-  }
-  add_or_save_atom(new_text_atom(NULL));  /* new line */
-  eol(s);
-}
 
 static void handle_list(char *s)
 {
@@ -1296,7 +1233,6 @@ struct {
   "import",handle_import,
   "export",handle_export,
 
-  "print",handle_print,
   "list",handle_list,
   "nolist",handle_nolist,
   "fail",handle_fail,
