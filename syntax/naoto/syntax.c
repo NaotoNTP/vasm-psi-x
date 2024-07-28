@@ -2,7 +2,7 @@
 /* (c) in 2024 by 'Naoto' */
 
 #include "vasm.h"
-#include "error.h"
+/*#include "error.h"*/
 
 /* The syntax module parses the input (read_next_line), handles
    assembly-directives (section, data-storage etc.) and parses
@@ -1107,6 +1107,45 @@ static void handle_export(char *s)
 /*
  *	Miscellaneous Directives
  */
+static void handle_echo(char *s)
+{
+  int severity = parse_constexpr(&s);
+  strbuf *txt;
+  s = skip(s);
+  
+  if (*s != ',') {
+    syntax_error(5);  /* missing operand */
+    return;
+  }
+  s = skip(s+1);
+  
+  if (txt = parse_name(0,&s)) {
+    switch (severity) {
+    
+	case 0:	/* message */
+	  syntax_error(16,txt->str);  
+	  break;
+
+    case 1:	/* warning */
+	  syntax_error(17,txt->str);
+	  break;
+
+    case 2:	/* error */
+	  syntax_error(18,txt->str);
+	  break;
+
+    case 3:	/* fatal error */
+  	  syntax_error(19,txt->str);
+      parse_end = 1;
+	  break;
+  
+    default: /* invalid message severity */
+	  syntax_error(15);
+      break;
+    }
+  }
+  eol(s);
+}
 
 static void handle_list(char *s)
 {
@@ -1233,6 +1272,7 @@ struct {
   "import",handle_import,
   "export",handle_export,
 
+  "echo",handle_echo,
   "list",handle_list,
   "nolist",handle_nolist,
   "fail",handle_fail,

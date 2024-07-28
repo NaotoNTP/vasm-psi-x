@@ -9,7 +9,13 @@
   "invalid data operand",ERROR,								/* 8 */
   "print format corrupted",ERROR,							/* 9 */
   "identifier expected",ERROR,								/* 10 */
-  "assembly failed",ERROR,									/* 11 */
+  "assembly failed",FATAL|ERROR,							/* 11 */
   "unexpected \"%s\" without \"%s\"",ERROR,					/* 12 */
   ", expected",WARNING,										/* 13 */
   "maximum inline nesting depth exceeded (%d)",ERROR,		/* 14 */
+  "invalid message severity",ERROR,							/* 15 */
+
+  "\nuser-defined message: %s",MESSAGE,						/* 16 */
+  "\nuser-defined warning: %s",WARNING,						/* 17 */
+  "\nuser-defined error: %s",ERROR,							/* 18 */
+  "\nuser-defined fatal error: %s",FATAL|ERROR,				/* 19 */
