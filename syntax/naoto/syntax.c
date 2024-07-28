@@ -61,6 +61,7 @@ static int parse_end = 0;
 /* options */
 static int align_data;
 static int allow_spaces;
+static int alt_numeric;
 static char local_char = '.';
 
 static char *labname;  /* current label field for assignment directives */
@@ -119,10 +120,18 @@ char *exp_skip(char *s)
 
 char *skip_operand(char *s)
 {
+#ifdef VASM_CPU_Z80
+  unsigned char lastuc = 0;
+#endif
   int par_cnt = 0;
-  char c;
+  char c = 0;
 
   for (;;) {
+#ifdef VASM_CPU_Z80
+    s = exp_skip(s);  /* @@@ why do we need that? */
+    if (c)
+      lastuc = toupper((unsigned char)*(s-1));
+#endif
     c = *s;
 
     if (START_PARENTH(c)) {
@@ -134,7 +143,12 @@ char *skip_operand(char *s)
       else
         syntax_error(3);  /* too many closing parentheses */
     }
+#ifdef VASM_CPU_Z80
+    /* For the Z80 ignore ' behind a letter, as it may be a register */
+    else if ((c=='\'' && (lastuc<'A' || lastuc>'Z')) || c=='\"')
+#else
     else if (c=='\'' || c=='\"')
+#endif
       s = skip_string(s,c,NULL) - 1;
     else if (!c || (par_cnt==0 && (c==',' || c==commentchar)))
       break;
@@ -195,7 +209,7 @@ static int intel_suffix(char *s)
 char *const_prefix(char *s,int *base)
 {
   if (isdigit((unsigned char)*s)) {
-    if (*base = intel_suffix(s))
+    if (alt_numeric && (*base = intel_suffix(s)))
       return s;
     if (*s == '0') {
       if (s[1]=='x' || s[1]=='X'){
@@ -206,10 +220,12 @@ char *const_prefix(char *s,int *base)
         *base = 2;
         return s+2;
       }    
-      *base = 8;
-      return s;
+      if (s[1]=='q' || s[1]=='Q'){
+        *base = 8;
+        return s+2;
+      }    
     } 
-    else if (s[1]=='#' && *s>='2' && *s<='9') {
+    else if (s[1]=='_' && *s>='2' && *s<='9') {
       *base = *s & 0xf;
       return s+2;
     }
@@ -274,8 +290,8 @@ strbuf *get_local_label(int n,char **start)
   s = *start;
   p = skip_local(s);
 
-  if (p!=NULL && *p=='.' && ISIDSTART(*s) && *s!=local_char && *(p-1)!='$') {
-    /* skip local part of global:local label */
+  if (p!=NULL && (*p=='.' || *p==':') && ISIDSTART(*s) && *s!=local_char && *(p-1)!='$') {
+    /* skip local part of global.local label */
     s = p + 1;
     if (p = skip_local(s)) {
       name = make_local_label(n,*start,(s-1)-*start,s,*(p-1)=='$'?(p-1)-s:p-s);
@@ -624,7 +640,16 @@ static void handle_even(char *s)
 
 static void handle_align(char *s)
 {
-  do_alignment(parse_constexpr(&s),number_expr(0),1,NULL);
+  int align = parse_constexpr(&s);
+  expr *fill = 0;
+
+  s = skip(s);
+  if (*s == ',') {
+    s = skip(s + 1);
+    fill = parse_expr_tmplab(&s);
+  }
+
+  do_alignment(align,number_expr(0),1,fill);
 }
 
 /*
@@ -1392,7 +1417,7 @@ static int execute_struct(char *name,int name_len,char *s)
               strdb = parse_string(&opp,*opp,8);
               if (strdb->size) {
                 if (strdb->size > db->size)
-                  syntax_error(24,strdb->size-db->size);  /* cut last chars */
+                  syntax_error(21,strdb->size-db->size);  /* cut last chars */
                 memcpy(db->data,strdb->data,
                        strdb->size > db->size ? db->size : strdb->size);
                 myfree(strdb->data);
@@ -1423,7 +1448,7 @@ static int execute_struct(char *name,int name_len,char *s)
         s++;
     }
     else if (p->type == INSTRUCTION)
-      syntax_error(23);  /* skipping instruction in struct init */
+      syntax_error(20);  /* skipping instruction in struct init */
 
     /* other atoms are silently ignored */
   }
@@ -1634,12 +1659,20 @@ void parse(void)
         syntax_error(5);  /* missing operand */
       else
 #endif
-        op_cnt++;
-      s = skip(s);
-      if (*s != ',')
-        break;
-      else
-        s = skip(s+1);
+      op_cnt++;
+      
+      if (allow_spaces) {
+        s = skip(s);
+        if (*s != ',')
+          break;
+        else
+          s = skip(s+1);
+      }
+      else {
+        if (*s != ',')
+          break;
+        s++;
+      }
     }
     eol(s);
 
@@ -1770,11 +1803,6 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       }
       else nc = -1;
     }
-    else if (*s == '.') {
-      /* \. : copy qualifier (dot-size) */
-      nc = copy_macro_qual(src,0,d,dlen);
-      s++;
-    }
     else if (*s=='?' && dlen>=1) {
 	  /* \?n : check if numeric parameter is defined */
 	  if (isdigit((unsigned char)*(s+1)) && dlen > 3) {
@@ -1790,12 +1818,6 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         nc = -1;
 	  }
 	}
-	/*	TODO: macro-scope symobls \{macsym} -> macsym_nnnnnn$
-    else if (*s=='{' && (end = skip_identifier(s+1))!=NULL) {
-      if (*end == '}') {
-		
-    }
-	*/
     else if (isdigit((unsigned char)*s)) {
       /* \0..\9 : insert macro parameter 0..9 */
       if (*s == '0')
@@ -1841,7 +1863,6 @@ int init_syntax()
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
-  allow_spaces = 1;
   esc_sequences = 1;
 
   return 1;
@@ -1858,5 +1879,16 @@ int syntax_defsect(void)
 
 int syntax_args(char *p)
 {
-  return 0;
+  if (!strcmp(p,"-align"))
+    align_data = 1;
+  else if (!strcmp(p,"-spaces"))
+    allow_spaces = 1;
+  else if (!strcmp(p,"-altnum"))
+    alt_numeric = 1;
+  else if (!strcmp(p,"-altlocal"))
+    local_char = '@';
+  else
+    return 0;
+
+  return 1;
 }

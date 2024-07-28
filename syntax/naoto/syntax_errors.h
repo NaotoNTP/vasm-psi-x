@@ -19,3 +19,6 @@
   "\nuser-defined warning: %s",WARNING,						/* 17 */
   "\nuser-defined error: %s",ERROR,							/* 18 */
   "\nuser-defined fatal error: %s",FATAL|ERROR,				/* 19 */
+
+  "skipping instruction in struct init",WARNING,			/* 20 */
+  "last %d bytes of string constant have been cut",WARNING,	/* 21 */
