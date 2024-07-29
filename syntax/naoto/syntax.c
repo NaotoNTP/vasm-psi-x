@@ -38,7 +38,6 @@ static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
 
 static char rs_name[] = "__RS";
-static char line_name[] = "__LINE__";
 
 static struct namelen macro_dirlist[] = {
   { 5,"macro" }, { 0,0 }
@@ -47,13 +46,13 @@ static struct namelen endm_dirlist[] = {
   { 4,"endm" }, { 0,0 }
 };
 static struct namelen rept_dirlist[] = {
-  { 4,"rept" }, { 0,0 }
+  { 4,"rept" }, { 3,"irp" }, { 4,"irpc" }, { 0,0 }
 };
 static struct namelen endr_dirlist[] = {
   { 4,"endr" }, { 0,0 }
 };
-static struct namelen endcmnt_dirlist[] = {
-  { 7,"endcmnt" }, { 0,0 }
+static struct namelen comend_dirlist[] = {
+  { 6,"comend" }, { 0,0 }
 };
 
 static int parse_end = 0;
@@ -120,14 +119,14 @@ char *exp_skip(char *s)
 
 char *skip_operand(char *s)
 {
-#ifdef VASM_CPU_Z80
+#if defined(VASM_CPU_Z80)
   unsigned char lastuc = 0;
 #endif
   int par_cnt = 0;
   char c = 0;
 
   for (;;) {
-#ifdef VASM_CPU_Z80
+#if defined(VASM_CPU_Z80)
     s = exp_skip(s);  /* @@@ why do we need that? */
     if (c)
       lastuc = toupper((unsigned char)*(s-1));
@@ -143,7 +142,7 @@ char *skip_operand(char *s)
       else
         syntax_error(3);  /* too many closing parentheses */
     }
-#ifdef VASM_CPU_Z80
+#if defined(VASM_CPU_Z80)
     /* For the Z80 ignore ' behind a letter, as it may be a register */
     else if ((c=='\'' && (lastuc<'A' || lastuc>'Z')) || c=='\"')
 #else
@@ -595,12 +594,12 @@ static void handle_org(char *s)
     set_section(new_org(parse_constexpr(&s)));
 }
 
-static void handle_phase(char *s)
+static void handle_obj(char *s)
 {
   start_rorg(parse_constexpr(&s));
 }
   
-static void handle_dephase(char *s)
+static void handle_objend(char *s)
 {
   if (end_rorg())
     eol(s);
@@ -906,12 +905,12 @@ static char *handle_iif(char *line_ptr)
  */
 static void handle_comment(char *s)
 {
-  new_repeat(0,NULL,NULL,NULL,endcmnt_dirlist);
+  new_repeat(0,NULL,NULL,NULL,comend_dirlist);
 }
 
-static void handle_endcmnt(char *s)
+static void handle_comend(char *s)
 {
-  syntax_error(12,"endcmnt","comment");  /* unexpected endcmnt without comment */
+  syntax_error(12,"comend","comment");  /* unexpected comend without comment */
 }
 
 /*
@@ -952,7 +951,7 @@ static void handle_endstruct(char *s)
 /*
  *	Inlining Directives
  */
-static void handle_inline(char *s)
+static void handle_module(char *s)
 {
   static int id;
   const char *last;
@@ -965,10 +964,10 @@ static void handle_inline(char *s)
     inline_stack[inline_stack_index++] = id++;
   }
   else
-    syntax_error(14,INLSTACKSIZE);  /* maximum inline nesting depth exceeded */
+    syntax_error(14,INLSTACKSIZE);  /* maximum module nesting depth exceeded */
 }
 
-static void handle_endinline(char *s)
+static void handle_endmodule(char *s)
 {
   if (inline_stack_index > 0 ) {
     if (--inline_stack_index == 0) {
@@ -981,7 +980,7 @@ static void handle_endinline(char *s)
     }
   }
   else
-  syntax_error(12,"endinln","inline");  /* unexpected endinln without inline */
+  syntax_error(12,"modend","module");  /* unexpected modend without module */
 }
 
 /*
@@ -992,6 +991,30 @@ static void handle_rept(char *s)
   int cnt = (int)parse_constexpr(&s);
 
   new_repeat(cnt<0?0:cnt,NULL,NULL,rept_dirlist,endr_dirlist);
+}
+
+static void do_irp(int type,char *s)
+{
+  strbuf *name;
+
+  if(!(name=parse_identifier(0,&s))){
+    syntax_error(10);  /* identifier expected */
+    return;
+  }
+  s = skip(s);
+  if (*s == ',')
+    s = skip(s + 1);
+  new_repeat(type,name->str,mystrdup(s),rept_dirlist,endr_dirlist);
+}
+
+static void handle_irp(char *s)
+{
+  do_irp(REPT_IRP,s);
+}
+
+static void handle_irpc(char *s)
+{
+  do_irp(REPT_IRPC,s);
 }
 
 static void handle_endr(char *s)
@@ -1007,7 +1030,7 @@ static void handle_endm(char *s)
   syntax_error(12,"endm","macro");  /* unexpected endm without macro */
 }
 
-static void handle_exitm(char *s)
+static void handle_mexit(char *s)
 {
   leave_macro();
 }
@@ -1082,25 +1105,26 @@ static void do_bind(char *s,unsigned bind)
   symbol *sym;
   strbuf *name;
 
-  do {
-    s = skip(s);
-    if (!(name = parse_identifier(0,&s))) {
+  while(1) {
+    if(!(name=parse_identifier(0,&s))){
       syntax_error(10);  /* identifier expected */
       return;
     }
     sym = new_import(name->str);
-    if ((sym->flags & (EXPORT|WEAK|NEAR)) != 0 &&
-        (sym->flags & (EXPORT|WEAK|NEAR)) != bind) {
+    if (sym->flags & (EXPORT|WEAK|LOCAL) != 0 &&
+        sym->flags & (EXPORT|WEAK|LOCAL) != bind) {
       general_error(62,sym->name,get_bind_name(sym)); /* binding already set */
     }
     else {
       sym->flags |= bind;
       if ((bind & XREF)!=0 && sym->type!=IMPORT)
         general_error(85,sym->name);  /* xref must not be defined already */
-    }
-    s = skip(s);
+	}
+	s = skip(s);
+	if(*s != ',')
+      break;
+	s = skip(s + 1);
   }
-  while (*s++ == ',');
   eol(s);
 }
 
@@ -1119,12 +1143,12 @@ static void handle_global(char *s)
   do_bind(s,EXPORT);
 }
 
-static void handle_import(char *s)
+static void handle_xref(char *s)
 {
   do_bind(s,EXPORT|XREF);
 }
 
-static void handle_export(char *s)
+static void handle_xdef(char *s)
 {
   do_bind(s,EXPORT|XDEF);
 }
@@ -1132,7 +1156,7 @@ static void handle_export(char *s)
 /*
  *	Miscellaneous Directives
  */
-static void handle_echo(char *s)
+static void handle_inform(char *s)
 {
   int severity = parse_constexpr(&s);
   strbuf *txt;
@@ -1239,8 +1263,8 @@ struct {
 #endif
 
   "org",handle_org,
-  "phase",handle_phase,
-  "dephase",handle_dephase,
+  "obj",handle_obj,
+  "objend",handle_objend,
   "cnop",handle_cnop,
   "even",handle_even,
   "align",handle_align,
@@ -1272,32 +1296,34 @@ struct {
   "ifle",handle_ifle,
 
   "comment",handle_comment,
-  "endcmnt",handle_endcmnt,
+  "comend",handle_comend,
 
   "struct",handle_struct,
-  "endstrc",handle_endstruct,
+  "strend",handle_endstruct,
 
-  "inline",handle_inline,
-  "endinln",handle_endinline,
+  "module",handle_module,
+  "modend",handle_endmodule,
 
   "rept",handle_rept,
+  "irp",handle_irp,
+  "irpc",handle_irpc,
   "endr",handle_endr,
 
   "endm",handle_endm,
-  "exitm",handle_exitm,
+  "mexit",handle_mexit,
   "purge",handle_purge,
   
   "section",handle_section,
-  "pushsct",handle_pushsect,
-  "popsct",handle_popsect,
+  "pushs",handle_pushsect,
+  "pops",handle_popsect,
 
   "local",handle_local,
   "weak",handle_weak,
   "global",handle_global,
-  "import",handle_import,
-  "export",handle_export,
+  "xref",handle_xref,
+  "xdef",handle_xdef,
 
-  "echo",handle_echo,
+  "inform",handle_inform,
   "list",handle_list,
   "nolist",handle_nolist,
   "fail",handle_fail,
