@@ -1,6 +1,7 @@
 /* syntax.c  syntax module for vasm */
 /* (c) in 2024 by 'Naoto' */
 
+#include "time.h"
 #include "vasm.h"
 /*#include "error.h"*/
 
@@ -61,11 +62,22 @@ static int parse_end = 0;
 static int align_data;
 static int allow_spaces;
 static int alt_numeric;
+static int dot_idchar;
+static int auto_export;
 static char local_char = '.';
 
 static char *labname;  /* current label field for assignment directives */
 static unsigned anon_labno;
 static char current_pc_str[2];
+
+/* special constants */
+static char year_const[] = "__YEAR";
+static char month_const[] = "__MONTH";
+static char day_const[] = "__DAY";
+static char weekday_const[] = "__WEEKDAY";
+static char hours_const[] = "__HOURS";
+static char minutes_const[] = "__MINUTES";
+static char seconds_const[] = "__SECONDS";
 
 /* isolated local labels block */
 #define INLSTACKSIZE 100
@@ -77,10 +89,25 @@ static char inl_lab_name[8];
 
 int isidchar(char c)
 {
-  if (isalnum((unsigned char)c) || c=='_')
+  if (isalnum((unsigned char)c) || c=='_' || c=='?')
+    return 1;
+  if (dot_idchar && c=='.')
     return 1;
   return 0;
 }
+
+#if defined(VASM_CPU_M68K)
+char *chkidend(char *start,char *end)
+{
+  if (dot_idchar && (end-start)>2 && *(end-2)=='.') {
+    char c = tolower((unsigned char)*(end-1));
+
+    if (c=='b' || c=='w' || c=='l')
+      return end - 2;	/* .b/.w/.l extension is not part of identifier */
+  }
+  return end;
+}
+#endif
 
 char *skip(char *s)
 {
@@ -1631,6 +1658,9 @@ void parse(void)
         label = new_labsym(0,labname);
         add_atom(0,new_label_atom(label));
       }
+
+      if (!is_local_label(labname) && auto_export)
+          label->flags |= EXPORT;
     }
 
     /* check for directives */
@@ -1874,6 +1904,10 @@ int init_syntax()
 {
   size_t i;
   hashdata data;
+  
+  time_t t = time(NULL);
+  struct tm date = *localtime(&t);
+  symbol *sym;
 
   dirhash = new_hashtable(0x1000);
   for (i=0; i<dir_cnt; i++) {
@@ -1890,10 +1924,50 @@ int init_syntax()
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
   esc_sequences = 1;
+  
+  /*
+   * Date & Time Constant Definitions 
+   */
+
+  /* year */
+  sym = internal_abs(year_const);
+  while (date.tm_year > 100)
+    date.tm_year -= 100;
+  set_internal_abs(year_const,date.tm_year);
+  sym->flags |= EQUATE;
+  
+  /* month */
+  sym = internal_abs(month_const);
+  set_internal_abs(month_const,date.tm_mon + 1);
+  sym->flags |= EQUATE;
+
+  /* weekday */
+  sym = internal_abs(weekday_const);
+  set_internal_abs(weekday_const,date.tm_wday + 1);
+  sym->flags |= EQUATE;
+
+  /* day */
+  sym = internal_abs(day_const);
+  set_internal_abs(day_const,date.tm_mday);
+  sym->flags |= EQUATE;
+
+  /* hours */
+  sym = internal_abs(hours_const);
+  set_internal_abs(hours_const,date.tm_hour);
+  sym->flags |= EQUATE;
+
+  /* minutes */
+  sym = internal_abs(minutes_const);
+  set_internal_abs(minutes_const,date.tm_min);
+  sym->flags |= EQUATE;
+
+  /* seconds */
+  sym = internal_abs(seconds_const);
+  set_internal_abs(seconds_const,date.tm_sec);
+  sym->flags |= EQUATE;
 
   return 1;
 }
-
 
 int syntax_defsect(void)
 {
@@ -1913,6 +1987,10 @@ int syntax_args(char *p)
     alt_numeric = 1;
   else if (!strcmp(p,"-altlocal"))
     local_char = '@';
+  else if (!strcmp(p,"-ldots"))
+    dot_idchar = 1;
+  else if (!strcmp(p,"-autoexp"))
+    auto_export = 1;
   else
     return 0;
 
