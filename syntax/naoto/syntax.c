@@ -290,7 +290,7 @@ strbuf *get_local_label(int n,char **start)
   s = *start;
   p = skip_local(s);
 
-  if (p!=NULL && (*p=='.' || *p==':') && ISIDSTART(*s) && *s!=local_char && *(p-1)!='$') {
+  if (p!=NULL && *p==':' && ISIDSTART(*s) && *s!=local_char && *(p-1)!='$') {
     /* skip local part of global.local label */
     s = p + 1;
     if (p = skip_local(s)) {
