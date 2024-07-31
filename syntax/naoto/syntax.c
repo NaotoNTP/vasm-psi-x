@@ -727,7 +727,6 @@ static void handle_incbin(char *s)
 /*
  *	Conditional Directives
  */
-
 static void ifdef(char *s,int b)
 {
   char *name;
@@ -1569,7 +1568,10 @@ void parse(void)
 	if (parse_end)
       continue;
 
+	/* TODO: Expand string constants within the line before moving on to proper parsing */
+	/* TODO: Expand functions as well */
     s = line;
+
     if (!cond_state()) {
       /* skip source until ELSE or ENDIF */
       int idx;
@@ -1858,6 +1860,38 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         s++;
       }
       else nc = -1;
+    }
+    else if (*s == '<') {
+      /* \<symbol> : insert absolute unsigned symbol value */
+      const char *fmt;
+      char *name;
+      symbol *sym;
+      taddr val;
+
+      if (*(++s) == '$') {
+        fmt = "%lX";
+        s++;
+      }
+      else
+        fmt = "%lu";
+      if (name = parse_symbol(&s)) {
+        if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
+          if (eval_expr(sym->expr,&val,NULL,0)) {
+            if (dlen > 9)
+              nc = sprintf(d,fmt,(unsigned long)(uint32_t)val);
+            else
+              nc = -1;
+          }
+        }
+        if (*s++!='>' || nc<=0) {
+          syntax_error(22);  /* invalid numeric expansion */
+          return 0;
+        }
+      }
+      else {
+        syntax_error(10);  /* identifier expected */
+        return 0;
+      }
     }
     else if (*s=='?' && dlen>=1) {
 	  /* \?n : check if numeric parameter is defined */

@@ -22,3 +22,4 @@
 
   "skipping instruction in struct init",WARNING,			/* 20 */
   "last %d bytes of string constant have been cut",WARNING,	/* 21 */
+  "invalid numeric expansion",ERROR,						/* 22 */
