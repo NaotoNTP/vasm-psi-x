@@ -729,18 +729,21 @@ static void handle_incbin(char *s)
  */
 static void ifdef(char *s,int b)
 {
-  char *name;
+  char *name = s;
   symbol *sym;
-  int result;
+  int result = 0;
 
-  if (!(name = parse_symbol(&s))) {
-    syntax_error(10);  /* identifier expected */
-    return;
+  if (s = skip_identifier(s)) {
+    result = find_macro(name,s-name) != NULL;
   }
-  if (sym = find_symbol(name))
+  else {
+    syntax_error(10);  /*identifier expected */
+  }
+
+  if (sym = find_symbol(name)) {
     result = sym->type != IMPORT;
-  else
-    result = 0;
+  }
+
   cond_if(result == b);
 }
 
@@ -752,29 +755,6 @@ static void handle_ifd(char *s)
 static void handle_ifnd(char *s)
 {
   ifdef(s,0);
-}
-
-static void ifmacro(char *s,int b)
-{
-  char *name = s;
-  int result;
-
-  if (s = skip_identifier(s)) {
-    result = find_macro(name,s-name) != NULL;
-    cond_if(result == b);
-  }
-  else
-    syntax_error(10);  /*identifier expected */
-}
-
-static void handle_ifmacrod(char *s)
-{
-  ifmacro(s,1);
-}
-
-static void handle_ifmacrond(char *s)
-{
-  ifmacro(s,0);
 }
 
 static void ifc(char *s,int b)
@@ -1304,15 +1284,12 @@ struct {
   "elseif",handle_elseif,
   "endif",handle_endif,
 
-  "ifdef",handle_ifd,
-  "ifnodef",handle_ifnd,
-  "ifmac",handle_ifmacrod,
-  "ifnomac",handle_ifmacrond,
-
-  "ifstr",handle_ifnb,
-  "ifnostr",handle_ifb,
-  "ifstreq",handle_ifc,
-  "ifstrne",handle_ifnc,  
+  "ifb",handle_ifb,
+  "ifnb",handle_ifnb,
+  "ifc",handle_ifc,
+  "ifnc",handle_ifnc,  
+  "ifd",handle_ifd,
+  "ifnd",handle_ifnd,
 
   "ifeq",handle_ifeq,
   "ifne",handle_ifne,
@@ -1565,11 +1542,9 @@ void parse(void)
   instruction *ip;
 
   while (line = read_next_line()) {
-	if (parse_end)
+  	if (parse_end)
       continue;
 
-	/* TODO: Expand string symbols within the line before moving on to proper parsing */
-	/* TODO: Expand functions as well */
     s = line;
 
     if (!cond_state()) {

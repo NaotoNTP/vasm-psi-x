@@ -87,3 +87,4 @@
   "missing definition for symbol <%s>",NOLINE|WARNING,
   "additional macro arguments ignored (expecting %d)",WARNING,
   "string symbol <%s> redefined",ERROR,
+  "symbol <%s> cannot be redefined as a string symbol",ERROR,

@@ -512,6 +512,7 @@ strsym *find_strsym(char *name,int len)
 
 void *new_strsym(char *name,strbuf *text)
 {
+  symbol *sym = find_symbol(name);
   strsym *ssym = find_strsym(name,strlen(name));
 
   /* check if string symbol already exists */
@@ -519,11 +520,18 @@ void *new_strsym(char *name,strbuf *text)
     general_error(88,name);  /* string symbol redefined */
     return;
   }
+
+  /* check if the name of this symbol has already been used for a normal symbol */
+  if (sym!=NULL) {
+    general_error(89,name);  /* symbol cannot be redefined as a string symbol */
+    return;
+  }
   
   ssym = mymalloc(sizeof(strsym));
   ssym->name = mystrdup(name);
   ssym->text = mystrdup(text->str);
   add_strsym(ssym);
+  new_equate(ssym->name,number_expr(0)); /* dummy equate to ensure no overlap and detection by 'ifdef' */
 
   return;
 }
