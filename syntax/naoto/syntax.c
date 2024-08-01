@@ -1551,7 +1551,12 @@ void parse(void)
       /* skip source until ELSE or ENDIF */
       int idx;
 
-      (void)parse_label_or_pc(&s);
+      /* skip label, when present */
+      if (labname = parse_label_or_pc(&s)) {
+        if (*s == ':')
+          s++;  /* skip double-colon */
+      }
+      /* advance to directive */
       idx = check_directive(&s);
       if (idx >= 0) {
         if (!strncmp(directives[idx].name,"if",2))
@@ -1570,7 +1575,14 @@ void parse(void)
 
     if (labname = parse_label_or_pc(&s)) {
       /* we have found a global or local label, or current-pc character */
+      uint32_t symflags = 0;
       symbol *label;
+
+      if (*s == ':') {
+        /* double colon automatically declares label as exported */
+        symflags |= EXPORT;
+        s++;
+      }
 
       s = skip(s);
 
@@ -1579,6 +1591,7 @@ void parse(void)
       if (!strnicmp(s,"equ",3) && isspace((unsigned char)*(s+3))) {
         s = skip(s+3);
         label = new_equate(labname,parse_expr_tmplab(&s));
+        label->flags |= symflags;
       }
   	  else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
         /* set allows redefinitions */
@@ -1592,6 +1605,7 @@ void parse(void)
 	     		s++;
 		    	s = skip(s);
 			    label = new_equate(labname,parse_expr_tmplab(&s));
+          label->flags |= symflags;
 		    } 
 		    else {
 			    /* '=' is shorthand for set */
@@ -1638,6 +1652,7 @@ void parse(void)
 #endif
         /* it's just a label */
         label = new_labsym(0,labname);
+        label->flags |= symflags;
         add_atom(0,new_label_atom(label));
       }
 
