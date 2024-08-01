@@ -34,7 +34,6 @@ static char *rept_start,*rept_name,*rept_vals;
 static section *cur_struct;
 static section *struct_prevsect;
 
-
 char *escape(char *s,char *code)
 {
   char dummy;
@@ -1026,7 +1025,6 @@ section *find_structure(char *name,int name_len)
   return s;
 }
 
-
 /* reads the next input line */
 char *read_next_line(void)
 {
@@ -1174,8 +1172,12 @@ char *read_next_line(void)
     else
       nc = 0;
 
+    if (nc == 0) {
+      nc = expand_strsym(cur_src,&s,d,len);  /* try string symbol expansion */
+    }
+
     if (nc > 0) {
-      /* expanded macro arguments */
+      /* expanded macro arguments or string symbols */
       len -= nc;
       d += nc;
     }

@@ -1772,6 +1772,13 @@ int expand_macro(source *src,char **line,char *d,int dlen)
 }
 
 
+int expand_strsym(source *src,char **line,char *d,int dlen)
+{
+  /* no support for string symbols*/
+  return 0;
+}
+
+
 static int intel_suffix(char *s)
 /* check for constants with h, d, o, q or b suffix */
 {

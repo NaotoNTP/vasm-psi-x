@@ -3,7 +3,6 @@
 
 #include "vasm.h"
 
-
 symbol *first_symbol;
 
 static symbol *saved_symbol;
@@ -18,6 +17,10 @@ static hashtable *symhash;
 static hashtable *regsymhash;
 #endif
 
+#ifndef STRSYMHTSIZE
+#define STRSYMHTSIZE 0x8000
+#endif
+static hashtable *strsymhash;
 
 static void print_type(FILE *f,symbol *p)
 {
@@ -490,12 +493,49 @@ int undef_regsym(const char *name,int no_case,int type)
 #endif /* HAVE_REGSYMS */
 
 
+void add_strsym(strsym *ssym)
+{
+  hashdata data;
+
+  data.ptr = ssym;
+  add_hashentry(strsymhash,ssym->name,data);
+}
+
+strsym *find_strsym(char *name,int len)
+{
+  hashdata data;
+
+  if (find_namelen(strsymhash,name,len,&data))
+    return data.ptr;
+  return NULL;
+}
+
+void *new_strsym(char *name,strbuf *text)
+{
+  strsym *ssym = find_strsym(name,strlen(name));
+
+  /* check if string symbol already exists */
+  if (ssym!=NULL) {
+    general_error(88,name);  /* string symbol redefined */
+    return;
+  }
+  
+  ssym = mymalloc(sizeof(strsym));
+  ssym->name = mystrdup(name);
+  ssym->text = mystrdup(text->str);
+  add_strsym(ssym);
+
+  return;
+}
+
+
 int init_symbol(void)
 {
   symhash = new_hashtable(SYMHTABSIZE);
 #ifdef HAVE_REGSYMS
   regsymhash = new_hashtable(REGSYMHTSIZE);
 #endif
+  strsymhash = new_hashtable(STRSYMHTSIZE);
   return 1;
 }
 
@@ -509,5 +549,7 @@ void exit_symbol(void)
     if (regsymhash->collisions)
       fprintf(stderr,"*** %d register symbol collisions!!\n",regsymhash->collisions);
 #endif
+    if (strsymhash->collisions)
+      fprintf(stderr,"*** %d string symbol collisions!!\n",strsymhash->collisions);
   }
 }

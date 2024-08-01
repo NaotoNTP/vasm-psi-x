@@ -1568,7 +1568,7 @@ void parse(void)
 	if (parse_end)
       continue;
 
-	/* TODO: Expand string constants within the line before moving on to proper parsing */
+	/* TODO: Expand string symbols within the line before moving on to proper parsing */
 	/* TODO: Expand functions as well */
     s = line;
 
@@ -1605,27 +1605,32 @@ void parse(void)
         s = skip(s+3);
         label = new_equate(labname,parse_expr_tmplab(&s));
       }
-	  else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
+  	  else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
         /* set allows redefinitions */
         s = skip(s+3);
         label = new_abs(labname,parse_expr_tmplab(&s));
-      }
-	  else if (*s=='=') {
+      } 
+  	  else if (*s=='=') {
         s++;
-		if (*s=='=') {
-			/* '==' is shorthand for equ */
-			s++;
-			s = skip(s);
-			label = new_equate(labname,parse_expr_tmplab(&s));
-		} 
-		else {
-			/* '=' is shorthand for set */
-			s = skip(s);
+	    	if (*s=='=') {
+			  /* '==' is shorthand for equ */
+	     		s++;
+		    	s = skip(s);
+			    label = new_equate(labname,parse_expr_tmplab(&s));
+		    } 
+		    else {
+			    /* '=' is shorthand for set */
+			    s = skip(s);
         	label = new_abs(labname,parse_expr_tmplab(&s));
-		}
-	  }
+	    	}
+	    }
       else if (offs_directive(s,"rs")) {
         label = new_setoffset(labname,&s,rs_name,1);
+      }
+      else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
+        s = skip(s+4);
+        new_strsym(labname,parse_name(0,&s));
+        continue;
       }
       else if (!strnicmp(s,"macro",5) &&
                (isspace((unsigned char)*(s+5)) || *(s+5)=='\0'
@@ -1639,7 +1644,7 @@ void parse(void)
         new_macro(buf->str,macro_dirlist,endm_dirlist,params);
         continue;
       }
-	  else if (!strnicmp(s,"struct",6) &&
+	    else if (!strnicmp(s,"struct",6) &&
                (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
                 || *(s+6)==commentchar)) {
         strbuf *buf;
@@ -1925,6 +1930,30 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     }
 
     if (nc >= dlen)
+      nc = -1;
+    else if (nc >= 0)
+      *line = s;  /* update line pointer when expansion took place */
+  }
+
+  return nc;  /* number of chars written to line buffer, -1: out of space */
+}
+
+
+int expand_strsym(source *src,char **line,char *d,int dlen)
+{
+  int nc = 0;
+  char *s = *line;
+  char *end = (s+1);
+  char *name;
+  strsym *ssym;
+
+  if (*s++ == '{' && (name = parse_symbol(&s)) && *(end = skip_identifier(end)) == '}') {
+	  if (ssym = find_strsym(name,strlen(name))) {
+      nc = sprintf(d,ssym->text);
+      *s++;
+    }
+    
+	  if (nc >= dlen)
       nc = -1;
     else if (nc >= 0)
       *line = s;  /* update line pointer when expansion took place */

@@ -66,6 +66,11 @@ struct regsym {
 };
 #endif /* HAVE_REGSYMS */
 
+/* string symbols */
+struct strsym {
+  const char *name;
+  const char *text;
+};
 
 extern symbol *first_symbol;
 
@@ -96,6 +101,10 @@ regsym *find_regsym_nc(const char *,int);
 regsym *new_regsym(int,int,const char *,int,unsigned int,unsigned int);
 int undef_regsym(const char *,int,int);
 #endif /* HAVE_REGSYMS */
+
+void add_strsym(strsym *);
+strsym *find_strsym(char *,int);
+void *new_strsym(char *,strbuf *);
 
 int init_symbol(void);
 void exit_symbol(void);

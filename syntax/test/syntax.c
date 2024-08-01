@@ -404,6 +404,12 @@ int expand_macro(source *src,char **line,char *d,int dlen)
   return 0;
 }
 
+int expand_strsym(source *src,char **line,char *d,int dlen)
+{
+  /* no support for string symbols*/
+  return 0;
+}
+
 int init_syntax()
 {
   size_t i;

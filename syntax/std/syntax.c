@@ -1415,6 +1415,14 @@ void my_exec_macro(source *src)
 #endif
 }
 
+
+int expand_strsym(source *src,char **line,char *d,int dlen)
+{
+  /* no support for string symbols*/
+  return 0;
+}
+
+
 char *const_prefix(char *s,int *base)
 {
   if(!isdigit((unsigned char)*s)){

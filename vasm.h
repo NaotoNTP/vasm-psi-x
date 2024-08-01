@@ -19,6 +19,7 @@ typedef struct macro macro;
 typedef struct source source;
 typedef struct listing listing;
 typedef struct regsym regsym;
+typedef struct strsym strsym;
 
 typedef struct strbuf {
   size_t size;
