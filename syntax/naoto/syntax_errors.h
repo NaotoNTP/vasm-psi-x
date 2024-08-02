@@ -5,9 +5,9 @@
   "missing closing parentheses",WARNING,					/* 4 */
   "missing operand",ERROR,                      		    /* 5 */
   "garbage at end of line",WARNING,							/* 6 */
-  "unknown print format flag \'%c\'",WARNING,				/* 7 */
+  "unexpected \"shift\" outside of macro",ERROR,			/* 7 */
   "invalid data operand",ERROR,								/* 8 */
-  "print format corrupted",ERROR,							/* 9 */
+  "invalid radix base value (%d)",ERROR,					/* 9 */
   "identifier expected",ERROR,								/* 10 */
   "assembly failed",FATAL|ERROR,							/* 11 */
   "unexpected \"%s\" without \"%s\"",ERROR,					/* 12 */

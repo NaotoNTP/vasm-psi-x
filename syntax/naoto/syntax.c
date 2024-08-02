@@ -69,6 +69,7 @@ static char local_char = '.';
 static char *labname;  /* current label field for assignment directives */
 static unsigned anon_labno;
 static char current_pc_str[2];
+static int radix_base = 10;
 
 /* special constants */
 static char year_const[] = "__YEAR";
@@ -235,7 +236,7 @@ static int intel_suffix(char *s)
 char *const_prefix(char *s,int *base)
 {
   if (isdigit((unsigned char)*s)) {
-    if (alt_numeric && (*base = intel_suffix(s)))
+    if (alt_numeric && (radix_base <= 10) && (*base = intel_suffix(s)))
       return s;
     if (*s == '0') {
       if (s[1]=='x' || s[1]=='X'){
@@ -255,7 +256,7 @@ char *const_prefix(char *s,int *base)
       *base = *s & 0xf;
       return s+2;
     }
-    *base = 10;
+    *base = radix_base;
     return s;
   }
 
@@ -656,7 +657,7 @@ static void handle_cnop(char *s)
   }
   else
     syntax_error(13);  /* , expected */
-    do_alignment(align,offset,1,NULL);
+  do_alignment(align,offset,1,NULL);
 }
 
 static void handle_even(char *s)
@@ -1031,16 +1032,6 @@ static void handle_endr(char *s)
 /*
  *	Macro Directives
  */
-static void handle_endm(char *s)
-{
-  syntax_error(12,"endm","macro");  /* unexpected endm without macro */
-}
-
-static void handle_mexit(char *s)
-{
-  leave_macro();
-}
-
 static void handle_purge(char *s)
 {
   strbuf *name;
@@ -1052,6 +1043,39 @@ static void handle_purge(char *s)
       break;
     s = skip(s+1);
   }
+}
+
+static void handle_shift(char *s)
+{
+  symbol *shift = internal_abs(CARGSYM);
+  source *src = cur_src;
+  int mac_found = 0;
+
+  while (src->parent != NULL) {
+    if (src->macro != NULL) {
+      mac_found = 1;
+      break;
+    }
+    src = src->parent;
+  }
+
+  if (mac_found) {
+    if (shift->expr->c.val < maxmacparams)
+      shift->expr->c.val++;
+  }
+  else
+    syntax_error(7);  /* unexpected "shift" outside a macro*/
+  eol(s);
+}
+
+static void handle_mexit(char *s)
+{
+  leave_macro();
+}
+
+static void handle_endm(char *s)
+{
+  syntax_error(12,"endm","macro");  /* unexpected endm without macro */
 }
 
 /*
@@ -1162,6 +1186,20 @@ static void handle_xdef(char *s)
 /*
  *	Miscellaneous Directives
  */
+static void handle_radix(char *s)
+{
+  int base;
+  
+  radix_base = 10;
+  base = parse_constexpr(&s);
+
+  if ((base < 2) || (base > 16))
+    syntax_error(9,base);  /* invalid radix base value */
+  else
+    radix_base = base;
+  eol(s);
+}
+
 static void handle_inform(char *s)
 {
   int severity = parse_constexpr(&s);
@@ -1177,25 +1215,25 @@ static void handle_inform(char *s)
   if (txt = parse_name(0,&s)) {
     switch (severity) {
     
-	case 0:	/* message */
-	  syntax_error(16,txt->str);  
-	  break;
+	  case 0:	/* message */
+	    syntax_error(16,txt->str);  
+	    break;
 
     case 1:	/* warning */
-	  syntax_error(17,txt->str);
-	  break;
+	    syntax_error(17,txt->str);
+	    break;
 
     case 2:	/* error */
-	  syntax_error(18,txt->str);
-	  break;
+	    syntax_error(18,txt->str);
+	    break;
 
     case 3:	/* fatal error */
   	  syntax_error(19,txt->str);
       parse_end = 1;
-	  break;
+	    break;
   
     default: /* invalid message severity */
-	  syntax_error(15);
+	    syntax_error(15);
       break;
     }
   }
@@ -1229,10 +1267,6 @@ struct {
   const char *name;
   void (*func)(char *);
 } directives[] = {
-  "rsset",handle_rsset,	
-  "rsreset",handle_rsreset,
-  "rseven",handle_rseven,
-
 #if defined(VASM_CPU_M68K)
   "rs",handle_rs16,
   "rs.b",handle_rs8,
@@ -1267,6 +1301,9 @@ struct {
 
   "ds",handle_spc8,
 #endif
+  "rsset",handle_rsset,	
+  "rsreset",handle_rsreset,
+  "rseven",handle_rseven,
 
   "org",handle_org,
   "obj",handle_obj,
@@ -1283,6 +1320,7 @@ struct {
   "else",handle_else,
   "elseif",handle_elseif,
   "endif",handle_endif,
+  "endc",handle_endif,
 
   "ifb",handle_ifb,
   "ifnb",handle_ifnb,
@@ -1312,9 +1350,10 @@ struct {
   "irpc",handle_irpc,
   "endr",handle_endr,
 
-  "endm",handle_endm,
-  "mexit",handle_mexit,
   "purge",handle_purge,
+  "shift",handle_shift,
+  "mexit",handle_mexit,
+  "endm",handle_endm,
   
   "section",handle_section,
   "pushs",handle_pushsect,
@@ -1326,6 +1365,7 @@ struct {
   "xref",handle_xref,
   "xdef",handle_xdef,
 
+  "radix",handle_radix,
   "inform",handle_inform,
   "list",handle_list,
   "nolist",handle_nolist,
@@ -1627,6 +1667,9 @@ void parse(void)
         char *params = skip(s+5);
         strbuf *buf;
 
+        if(ISEOL(params))
+          params = NULL;
+
         s = line;
         if (!(buf = parse_identifier(0,&s)))
           ierror(0);
@@ -1754,6 +1797,16 @@ void parse(void)
   cond_check();  /* check for open conditional blocks */
 }
 
+/* src is the new macro source, cur_src is still the parent source */
+void my_exec_macro(source *src)
+{
+  symbol *shift;
+
+  /* reset the macro argument shift amount to 0, selecting the first macro parameter */
+  shift = internal_abs(CARGSYM);
+  cur_src->cargexp = shift->expr;  /* remember last argument shift amount */
+  shift->expr = number_expr(0);
+}
 
 /* parse next macro argument */
 char *parse_macro_arg(struct macro *m,char *s,
@@ -1766,43 +1819,45 @@ char *parse_macro_arg(struct macro *m,char *s,
   return s;
 }
 
-
 /* count the number of macro args that were passed this call */
 int count_passed_macargs(source *src)
 {
+  symbol *shift = internal_abs(CARGSYM);
   int i, n = 0;
 
-  for (i = 0; i < maxmacparams; i++) {
+  for (i = shift->expr->c.val; i < maxmacparams; i++) {
     if (src->param_len[i] > 0) n++;
   }
 
   return n;
 }
 
-
 /* write 0 to buffer when macro argument is missing or empty, 1 otherwise */
 static int macro_arg_defined(source *src,char *argstart,char *argend,char *d,int type)
 {
+  symbol *shift = internal_abs(CARGSYM);
   int n;
 
   if (type) {
     n = find_macarg_name(src,argstart,argend-argstart);
   }
   else {
-	n = *(argstart) - '0';
+  	n = *(argstart) - '0';
 
-	if (n == 0) {
+  	if (n == 0) {
 #if MAX_QUALIFIERS > 0
-    *d++ = ((src->qual_len[0] > 0) ? '1' : '0');
+      *d++ = ((src->qual_len[0] > 0) ? '1' : '0');
 #else
-    *d++ = '0';
+      *d++ = '0';
 #endif
-      return 1;		
-	} 
-	else {
-	  n--;
-	}
+       return 1;		
+	  } 
+	  else {
+	    n--;
+	  }
   }
+
+  n += shift->expr->c.val;
 
   if (n >= 0) {
     /* valid argument name */
@@ -1817,6 +1872,7 @@ static int macro_arg_defined(source *src,char *argstart,char *argend,char *d,int
 /* expands arguments and special escape codes into macro context */
 int expand_macro(source *src,char **line,char *d,int dlen)
 {
+  symbol *shift = internal_abs(CARGSYM);
   int nc = 0;
   int n;
   char *s = *line;
@@ -1908,13 +1964,13 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       if (*s == '0')
         nc = copy_macro_qual(src,0,d,dlen);
       else
-        nc = copy_macro_param(src,*s-'1',d,dlen);
+        nc = copy_macro_param(src,(*s-'1'+shift->expr->c.val),d,dlen);
       s++;
     }
     else if ((end = skip_identifier(s)) != NULL) {
       if ((n = find_macarg_name(src,s,end-s)) >= 0) {
         /* \argname: insert named macro parameter n */
-        nc = copy_macro_param(src,n,d,dlen);
+        nc = copy_macro_param(src,(n+shift->expr->c.val),d,dlen);
         s = end;
       }
     }
