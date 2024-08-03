@@ -1,0 +1,451 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!-- saved from url=(0093)file:///C:/Users/Nathan/Documents/GitHub/vasm-naoto/syntax/psi-x/PSI-X%20Syntax%20Module.html -->
+<html><!-- Created on  by texi2html 5.0
+texi2html was written by: 
+            Lionel Cons <Lionel.Cons@cern.ch> (original author)
+            Karl Berry  <karl@freefriends.org>
+            Olaf Bachmann <obachman@mathematik.uni-kl.de>
+            and many others.
+Maintained by: Many creative people.
+Send bugs and suggestions to <texi2html-bug@nongnu.org>
+--><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>VASM: PSI-X Syntax Module</title>
+
+<meta name="description" content="VASM: PSI-X Syntax Module">
+<meta name="keywords" content="VASM: PSI-X Syntax Module">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="texi2html 5.0">
+
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.smallquotation {font-size: smaller}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+div.smalldisplay {margin-left: 3.2em}
+div.smallexample {margin-left: 3.2em}
+div.smalllisp {margin-left: 3.2em}
+pre.display {font-family: serif}
+pre.format {font-family: serif}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+pre.smalldisplay {font-family: serif; font-size: smaller}
+pre.smallexample {font-size: smaller}
+pre.smallformat {font-family: serif; font-size: smaller}
+pre.smalllisp {font-size: smaller}
+span.nocodebreak {white-space:pre}
+span.nolinebreak {white-space:pre}
+span.roman {font-family:serif; font-weight:normal}
+span.sansserif {font-family:sans-serif; font-weight:normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en" bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#800080" alink="#FF0000">
+
+
+
+<hr>
+<a name="PSI-X-Syntax-Module"></a>
+<a name="PSI-X-Syntax-Module-1"></a>
+<h1 class="chapter">PSI-X Syntax Module</h1>
+<p>This document describes the PSI-X syntax module, inpsired by the PSY-Q family of assemblers. It is suitable for multiple CPUs (M68K, Z80, 6502, etc.) and is available with the extension <code>psi-x</code>.
+</p>
+<hr>
+<a name="Author"></a>
+<h2 class="section">Author</h2>
+
+<p>    This module was created in 2024 by 'Naoto' and is intended for use with a custom fork of VASM, which can be found here:
+<a href="https://github.com/NaotoNTP/vasm-psi-x/">https://github.com/NaotoNTP/vasm-psi-x/</a></p>
+<hr>
+<a name="Additional-Options-For-This-Module-2"></a>
+<h2 class="section">Additional Options For This Module</h2>
+ 
+<p>This syntax module provides the following additional options:
+</p> 
+<dl compact="compact">
+
+<dt>‘<samp>-align</samp>’</dt>
+<dd><p> Enables natural alignment for data (e.g. <code>dc</code>, <code>ds</code>) and
+ offset directives (<code>rs</code>).
+</p>
+</dd>
+
+<dt>‘<samp>-altlocal</samp>’</dt>
+<dd><p> Local symbols are prefixed by <code>'@'</code> instead of <code>'.'</code>. For
+ compatibility with PSY-Q assemblers, where <code>'@'</code> is the default local symbol prefix.
+</p>
+</dd>
+
+<dt>‘<samp>-altnum</samp>’</dt>
+<dd><p> Enables intel-style numeric-base suffixes (e.g. <code>0h</code>, <code>0b</code>).
+</p>
+</dd>
+
+<dt>‘<samp>-autoexp</samp>’</dt>
+<dd><p> Automatically export all non-local symbols, making them visible
+ to other modules during linking.
+</p>
+</dd>
+
+<dt>‘<samp>-ldots</samp>’</dt>
+<dd><p> Allow dots (<code>.</code>) within all identifiers.
+</p>
+</dd>
+
+<dt>‘<samp>-spaces</samp>’</dt>
+<dd><p> Allow whitespace characters in expressions.
+</p>
+</dd>
+
+</dl>
+<hr>
+<a name="General-Syntax-1"></a>
+<h2 class="section">General Syntax</h2>
+
+<p>Labels must either start at the first column of a line or must be
+terminated by a colon character (<code>:</code>). In both cases, a mnemonic on the same
+line must be separated from the label by whitespace or assigment operator (i.e. <code>=</code>).
+Additionally, terminating a label with a double colon (<code>::</code>)
+declares that label externally visible (see also <code>xdef</code>).
+</p>
+<p>Labels are declared as local when prfixed with ’<code>.</code>’ (’<code>@</code>’ when using the <code>-altlocal</code> option)
+or when suffixed with ’<code>$</code>’. Additionally, label names cannot begin with a digit (0-9) as the first character.
+With respect to these restrictions, any alphanumeric character, including ’<code>_</code>’ is permitted.
+Local labels may be referenced anywhere in the scope between two global label declarations.
+</p>
+<p>It is possible to refer to any local label/symbol in the source by preceding its
+name with the global label (aka parent label) it belongs to with a separtating colon character like so:
+<code>global_name:local_name</code>. This is not generally recommended for referencing labels in code; rather,
+it is best to reserve this practice for referencing fields within a structure (see also <code>struct</code>).
+</p>
+<p>Anonymous labels are also supported. They are declared with a single ’<code>:</code>’
+at the beginning of a line. They may be referenced by ’<code>:</code>’ followed
+directly by one or more ’<code>+</code>’ or ’<code>-</code>’ signs. A <code>+</code> selects
+the first anonymous label following the point of reference. A <code>++</code>
+select the second anonymous label in that direction, and so on. A <code>-</code>
+selects the first anonymous label before the point of reference. Example:
+</p><div class="example">
+<pre class="example">:	jmp	:-	; infinite loop
+</pre></div>
+
+<p>The option ‘<samp>-ldots</samp>’ allows dots (<code>.</code>) within labels, symbols, and other
+identifiers. However, the ending of these identifiers may not conflict with the target architecture’s reserved 
+qualifiers (i.e. <code>.b</code>, <code>.w</code> or <code>.l</code> when targetting M68K).
+</p>
+<p>Operands are separated from the mnemonic by whitespace. Multiple
+operands are separated from each other by commas (<code>,</code>).
+</p>
+<p>Be sure to avoid declaring a label on the same line as a non-assignment
+directive for conditional assembly (if, else, endif, etc.), as this is not supported by the assembler.
+</p>
+<p>Comments are introduced by the comment character (<code>;</code>). The assembler will attempt 
+to issue a warning if a comment is introduced at the end of a line without the comment character,
+but this is not guaranteed. Additionally, multi-line comment blocks are supported by way of the <code>comment</code> directive.
+<p>Examples:
+</p><div class="example">
+<pre class="example">label:	instr.q	op1,op2	; comment</pre>
+<pre class="example"> </pre>
+<pre class="example">	comment</pre>
+<pre class="example">.......................</pre>
+<pre class="example">multiline comment block</pre>
+<pre class="example">.......................</pre>
+<pre class="example">	comend</pre>
+</div>
+
+<p>In expressions, numbers starting with <code>$</code> are hexadecimal (e.g.
+<code>$FB2C</code>). For Z80, <code>&amp;</code> may also be used as a hexadecimal prefix,
+but make sure to avoid conflicts with the and-operator (either by using
+parentheses or blanks).
+<code>%</code> introduces binary numbers (e.g. <code>%1100101</code>).
+Numbers starting with <code>@</code> are assumed to be octal numbers, e.g.
+<code>@237</code> (except for Z80, where it means binary).
+</p>
+<p>
+A special case is a digit followed by a <code>_</code>, which can be used to
+define an arbitrary base between 2 and 9 (e.g. <code>4_3012</code>).
+Intel-style numeric base suffixes are supported when the <code>-altnum</code> option has been specified: 
+<code>h</code> for hexadecimal, <code>d</code> for decimal, <code>o</code> or <code>q</code> for octal and <code>b</code> for
+binary. Hexadecimal intel-style numbers must start with a digit (add leading
+<code>0</code>s where required).
+C-style prefixes are also supported for hexadecimal (<code>0x</code>), octal (<code>0q</code>), and
+binary (<code>0b</code>).
+</p>
+<p>
+All other numbers starting with a digit are decimal by default (i.e. <code>1239</code>).
+However, the <code>radix</code> directive may be used to change the default numeric base within a range of 2 to 16. 
+Note that for numeric base values higher than 10, recognition of intel-style suffixes will be temporarily
+disabled until the base value is changed to be 10 or below. This is done in order to avoid conflicts between suffixes and hexadecimal 
+digits (<code>d</code> and <code>b</code>).
+Additionally, numbers must still start with a decimal digit to be valid with numeric base values higher than 10 (oncemore, add leading
+<code>0</code>s as required).
+</p>
+
+<hr>
+<a name="Directives-1"></a>
+<h2 class="section">Directives</h2>
+
+<p>The following directives are supported by this syntax module (if the
+CPU- and output-module allow it):
+</p>
+<dl compact="compact">
+
+<dt><code>&lt;symbol&gt; = &lt;expression&gt;</code></dt>
+<dd>
+<p>      Equivalent to <code>&lt;symbol&gt; set &lt;expression&gt;</code>.
+</p>
+</dd>
+
+<dt><code>&lt;symbol&gt; == &lt;expression&gt;</code></dt>
+<dd>
+<p>      Equivalent to <code>&lt;symbol&gt; equ &lt;expression&gt;</code>.
+</p>
+</dd>
+
+<dt><code>align &lt;alignment&gt;[,&lt;fill&gt;]</code></dt>
+<dd><p>      Insert as many padding bytes as are needed to reach an address divisible 
+	  by <code>&lt;alignment&gt;</code>. For example <code>align 4</code> would pad fill bytes
+	  until the current address is aligned to the next 32-bit boundary. The padding bytes can be assigned 
+	  a value other than <code>0</code> via the optional <code>&lt;fill&gt;</code> parameter.
+</p>
+</dd>
+
+<dt><code>cnop &lt;offset&gt;,&lt;alignment&gt;</code></dt>
+<dd><p>      Insert as many padding bytes as are needed to reach an address divisible 
+	by <code>&lt;alignment&gt;</code>. Then, add <code>&lt;offset&gt;</code> padding bytes.
+</p>
+</dd>
+
+<dt><code>comment</code></dt>
+<dt><code>comend</code></dt>
+<dd><p>      Multi-line comment directives. The assembler will ignore everything from encountering the <code>comment</code>
+	directive until a <code>comend</code> directive is found, at which point normal assembly continues.
+</p>
+</dd>
+
+<dt><code>db &lt;exp1&gt;[,&lt;exp2&gt;,&quot;&lt;str1&gt;&quot;,'&lt;str2&gt;'...]</code></dt>
+<dt><code>dw &lt;exp1&gt;[,&lt;exp2&gt;...]</code></dt>
+<dt><code>dl &lt;exp1&gt;[,&lt;exp2&gt;...]</code></dt>
+<dd><p>      Z80/6502 declare constant directives. Assigns the constant integer values of the list of operands 
+	into successive bytes of memory in the current section. How many bytes each operand value occupies depends on the specific directive used:
+	<code>db</code> assigns bytes, <code>dw</code> assigns words, and <code>dl</code> assigns longwords. Additionally, <code>db</code> accepts string operands, 
+	wherein each character in the string is assigned to consecutive bytes in memory, in the order they appear.
+</p>
+</dd>
+
+<dt><code>dc.&lt;sz&gt; &lt;exp1&gt;[,&lt;exp2&gt;,&quot;&lt;str1&gt;&quot;,'&lt;str2&gt;'...]</code></dt>
+<dd><p>      M68K declare constant directive. Assigns the constant integer values of the list of operands 
+	into successive bytes of memory in the current section. <code>&lt;sz&gt;</code> defaults to <code>w</code> when not specified.
+	When a <code>&lt;sz&gt;</code> of <code>b</code> is specified, strings can also be given as operands.
+</p>
+</dd>
+
+<dt><code>dcb &lt;exp&gt;[,&lt;fill&gt;]</code></dt>
+<dt><code>dcw &lt;exp&gt;[,&lt;fill&gt;]</code></dt>
+<dt><code>dcl &lt;exp&gt;[,&lt;fill&gt;]</code></dt>
+<dd><p>      Z80/6502 declare constant block directives. Insert <code>&lt;exp&gt;</code> zero or <code>&lt;fill&gt;</code> 
+	bytes, words, or longwords into the current section as specified by the selected directive.
+</p>
+</dd>
+
+<dt><code>dcb.&lt;sz&gt; &lt;exp&gt;[,&lt;fill&gt;]</code></dt>
+<dd><p>      M68K declare constant block directive. Insert <code>&lt;exp&gt;</code> zero or <code>&lt;fill&gt;</code> 
+	bytes, words, or longwords into the current section as specified by <code>&lt;sz&gt;</code>. 
+	<code>&lt;sz&gt;</code> defaults to <code>w</code> when not specified.
+</p>
+</dd>
+
+<dt><code>ds &lt;exp&gt;</code></dt>
+<dd><p>      Z80/6502 define storage directive. Equivalent to <code>dcb &lt;exp&gt;,0</code>.
+	Intended for defining storage in sections with uninitialized data. 
+</p>
+</dd>
+
+<dt><code>ds.&lt;sz&gt; &lt;exp&gt;</code></dt>
+<dd><p>      M68K define storage directive. Equivalent to <code>dcb.&lt;sz&gt; &lt;exp&gt;,0</code>.
+	Intended for defining storage in sections with uninitialized data. 
+</p>
+</dd>
+
+<dt><code>else</code></dt>
+<dd><p>      Assemble the following lines when the previous <code>if</code>-condition
+      was false.
+</p>
+</dd>
+
+<dt><code>elseif</code></dt>
+<dd><p>      equivalent to <code>else</code> followed by <code>if</code> on the next line, but without the
+	need for a matching <code>endif</code>/<code>endc</code> directive. This helps avoid nesting.
+</p>
+</dd>
+
+<dt><code>end</code></dt>
+<dd><p>      End assembly and ignore everything after this line.
+</p>
+</dd>
+
+<dt><code>endc</code></dt>
+<dt><code>endif</code></dt>
+<dd><p>      Ends a section of conditional assembly.
+</p>
+</dd>
+
+<dt><code>endm</code></dt>
+<dd><p>      Ends a macro definition.
+</p>
+</dd>
+
+<dt><code>endr</code></dt>
+<dd><p>      Ends a repetition block.
+</p>
+</dd>
+
+<dt><code>&lt;symbol&gt; equ &lt;expression&gt;</code></dt>
+<dd><p>      Define a new program symbol with the name <code>&lt;symbol&gt;</code> 
+	and assign it a constant value specified by <code>&lt;expression&gt;</code>. 
+	Note that attempting to reassign the value of <code>&lt;symbol&gt;</code> beyond 
+	this point will cause an error. If you need to be able to redifne the value of
+	as symbol, use the <code>set</code> directive instead.
+</p>
+</dd>
+
+<dt><code>even</code></dt>
+<dd><p>      Aligns to an even address. Equivalent to <code>cnop 0,2</code> or <code>align 2</code>.
+</p>
+</dd>
+
+<dt><code>fail</code></dt>
+<dd><p>      Throw a fatal error and stop assembly immediately; do not generate
+	an output file.
+</p>
+</dd>
+
+<dt><code>global &lt;symbol&gt;[,&lt;symbol&gt;...]</code></dt>
+<dd><p>      Flag <code>&lt;symbol&gt;</code> as an external symbol, which means that <code>&lt;symbol&gt;</code> is
+	visible to all modules in the linking process. It may be either defined or undefined.  
+</p>
+</dd>
+
+<dt><code>if &lt;expression&gt;</code></dt>
+<dd><p>      Conditionally assemble the following lines if <code>&lt;expression&gt;</code> is non-zero.
+</p>
+</dd>
+
+
+</dl>
+
+
+<hr>
+<a name="Structures"></a>
+<h2 class="section">Structures</h2>
+<p>The oldstyle syntax is able to manage structures.
+Structures can be defined in two ways:
+</p><div class="example">
+<pre class="example">mylabel struct[ure]
+        &lt;fields&gt;
+        endstruct[ure]
+</pre></div>
+ 
+<p>        or:    
+</p><div class="example">
+<pre class="example">        struct[ure] mylabel
+        &lt;fields&gt;
+        endstruct[ure]
+</pre></div>
+ 
+
+<p>Any directive is allowed to define the structure fields. Labels can be used
+to define offsets into the structure. The initialized data is used as default
+value, whenever no value is given for a field when the structure is referenced.
+</p>
+<p>Some examples of structure declarations:
+</p><div class="example">
+<pre class="example">  struct point
+x    db 4
+y    db 5
+z    db 6
+  endstruct
+</pre></div>
+
+<p>This will create the following labels:
+</p><div class="example">
+<pre class="example">point.x  ; 0   offsets
+point.y  ; 1
+point.z  ; 2
+point    ; 3   size of the structure
+</pre></div>
+
+<p>The structure can be used by optionally redefining the field values:
+</p><div class="example">
+<pre class="example">point1 point
+point2 point 1, 2, 3
+point3 point ,,4
+</pre></div>
+<p>is equivalent to
+</p><div class="example">
+<pre class="example">point1  
+               db 4
+               db 5
+               db 6
+point2
+               db 1
+               db 2
+               db 3
+point3
+               db 4
+               db 5
+               db 4
+</pre></div>
+
+
+<hr>
+<a name="Known-Problems-19"></a>
+<h2 class="section">Known Problems</h2>
+
+<p>    Some known problems of this module at the moment:
+</p>
+<ul class="no-bullet">
+<li>- n/a
+</li></ul>
+
+<hr>
+<a name="Error-Messages-20"></a>
+<h2 class="section">Error Messages</h2>
+
+<p>This module has the following error messages:
+</p>
+<ul class="no-bullet">
+<li>- 1001: syntax error
+</li><li>- 1002: invalid extension
+</li><li>- 1003: no space before operands
+</li><li>- 1004: too many closing parentheses
+</li><li>- 1005: missing closing parentheses
+</li><li>- 1006: missing operand
+</li><li>- 1007: garbage at end of line
+</li><li>- 1008: %c expected
+</li><li>- 1009: invalid data operand
+</li><li>- 1010: , expected
+</li><li>- 1011: identifier expected
+</li><li>- 1012: illegal escape sequence %c
+</li><li>- 1013: unexpected "%s" without "%s"
+</li><li>- 1014: dsect already active
+</li><li>- 1015: dend without dsect
+</li><li>- 1016: missing dend
+</li><li>- 1018: maximum inline nesting depth exceeded (%d)
+</li><li>- 1017: einline without inline
+</li><li>- 1021: cannot open binary file "%s"
+</li><li>- 1023: alignment too big
+</li><li>- 1024: label &lt;%s&gt; has already been defined
+</li><li>- 1025: skipping instruction in struct init
+</li><li>- 1026: last %d bytes of string constant have been cut
+
+</li></ul>
+
+<hr>
+
+</body></html>

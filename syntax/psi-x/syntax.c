@@ -1272,6 +1272,7 @@ struct {
   "rs.w",handle_rs16,
   "rs.l",handle_rs32,
 
+  "dc",handle_d16,
   "dc.b",handle_d8,
   "dc.w",handle_d16,
   "dc.l",handle_d32,
