@@ -3,7 +3,6 @@
 
 #include "time.h"
 #include "vasm.h"
-/*#include "error.h"*/
 
 /* The syntax module parses the input (read_next_line), handles
    assembly-directives (section, data-storage etc.) and parses
@@ -14,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm custom syntax module (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module 1.0 (c) 2024 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 

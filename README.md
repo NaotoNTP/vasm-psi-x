@@ -1,6 +1,6 @@
 # vasm
 
-This is a git repository clone of the vasm source code.
+This is a customized fork of VASM that aims to provide a syntax and feature set comparable to the PSY-Q family of assemblers, whilst retaining support for some of VASM's more uniquely useful features. While this fork makes no promises to be 100% compatible existing codebases, users of PSY-Q assemblers should in theory find migration to this fork of VASM much easier than the syntax module options available with the standard version of VASM.
 
 You can find the original at the [vasm home](http://sun.hasenbraten.de/vasm).
 
@@ -13,7 +13,6 @@ Many common directives/pseudo-opcodes are supported (depending on the syntax mod
 The assembler supports optimizations (e.g. choosing the shortest possible branch instruction or addressing mode) and relaxations (e.g. converting a branch to an absolute jump when necessary).
 
 Most syntax modules support macros, include directives, repetitions, conditional assembly and local symbols.
-
 
 
 ## Compilation Instructions
@@ -45,7 +44,7 @@ Define `VASM_CPU` and `VASM_SYNTAX` when running cmake, e.g:
 ```bash
 mkdir build
 cd build
-cmake -DVASM_CPU=m68k -DVASM_SYNTAX=mot ..
+cmake -DVASM_CPU=m68k -DVASM_SYNTAX=psi-x ..
 make
 ```
 
@@ -54,7 +53,7 @@ make
 Define `CPU` and `SYNTAX` when running make, e.g:
 
 ```bash
-make CPU=m68k SYNTAX=mot
+make CPU=m68k SYNTAX=psi-x
 ```
 
 ### Available CPU modules
@@ -77,9 +76,9 @@ make CPU=m68k SYNTAX=mot
 
 ### Available Syntax modules
 
+* psi-x
 * std
 * madmac
 * mot
 * oldstyle
 * test
-
