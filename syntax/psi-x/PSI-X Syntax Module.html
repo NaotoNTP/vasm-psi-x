@@ -46,7 +46,7 @@ ul.no-bullet {list-style: none}
 <a name="Psi-X-Syntax-Module"></a>
 <a name="Psi-X-Syntax-Module-1"></a>
 <h1 class="chapter">Psi-X Syntax Module</h1>
-<p>This document describes the Psi-X syntax module, inpsired by the Psy-Q family of assemblers. It is suitable for multiple CPUs (M68K, Z80, 6502, etc.) and is available with the extension <code>psi-x</code>.
+<p>This document describes the Psi-X syntax module, inspired by the Psy-Q family of assemblers. It is suitable for multiple CPUs (M68K, Z80, 6502, etc.) and is available with the extension <code>psi-x</code>.
 </p>
 <hr>
 <a name="Author"></a>
@@ -102,17 +102,17 @@ ul.no-bullet {list-style: none}
 
 <p>Labels must either start at the first column of a line or must be
 terminated by a colon character (<code>:</code>). In both cases, a mnemonic on the same
-line must be separated from the label by whitespace or assigment operator (i.e. <code>=</code>).
+line must be separated from the label by whitespace or assignment operator (i.e. <code>=</code>).
 Additionally, terminating a label with a double colon (<code>::</code>)
 declares that label externally visible (see also <code>xdef</code>).
 </p>
-<p>Labels are declared as local when prfixed with ’<code>.</code>’ (’<code>@</code>’ when using the <code>-altlocal</code> option)
+<p>Labels are declared as local when prefixed with ’<code>.</code>’ (’<code>@</code>’ when using the <code>-altlocal</code> option)
 or when suffixed with ’<code>$</code>’. Additionally, label names cannot begin with a digit (0-9) as the first character.
 With respect to these restrictions, any alphanumeric character, including ’<code>_</code>’ is permitted.
 Local labels may be referenced anywhere in the scope between two global label declarations.
 </p>
 <p>It is possible to refer to any local label/symbol in the source by preceding its
-name with the global label (aka parent label) it belongs to with a separtating colon character like so:
+name with the global label (aka parent label) it belongs to with a separating colon character like so:
 <code>global_name:local_name</code>. This is not generally recommended for referencing labels in code; rather,
 it is best to reserve this practice for referencing fields within a structure (see also <code>struct</code>).
 </p>
@@ -315,12 +315,12 @@ CPU- and output-module allow it):
 	of <code>{&lt;symbol&gt;}</code> on that line will be replaced with the value of <code>&lt;string&gt;</code>. 
 	For example, if a symbol named <code>foo</code> is assigned a string value of <code>"bar"</code>, 
 	anywhere in the current source where <code>{foo}</code> is written will be pre-processed and 
-	interpretted as the text <code>bar</code> during assembly.</p>
+	interpreted as the text <code>bar</code> during assembly.</p>
 <p>	As such, this line:</p>
 <div class="example">
 <pre class="example">{foo}:	dc.b	"{foo}"	; {foo}
 </pre></div>
-<p>	Will be interpretted by the assembler as:</p>
+<p>	Will be interpreted by the assembler as:</p>
 <div class="example">
 <pre class="example">bar:	dc.b	"bar"	; bar
 </pre></div>
