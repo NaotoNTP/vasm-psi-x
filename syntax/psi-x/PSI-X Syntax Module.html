@@ -345,6 +345,12 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>global &lt;symbol&gt;[,&lt;symbol&gt;...]</code></dt>
+<dd><p>      Flag <code>&lt;symbol&gt;</code> as an global symbol, which means that <code>&lt;symbol&gt;</code> is
+	visible to all modules in the linking process. It may be either defined or undefined.  
+</p>
+</dd>
+
 <dt><code>if &lt;expression&gt;</code></dt>
 <dd><p>      Conditionally assemble the following lines if <code>&lt;expression&gt;</code> is non-zero.
 </p>
@@ -495,7 +501,7 @@ CPU- and output-module allow it):
 </dd>
 
 <dt><code>&lt;name&gt; macro [&lt;argname1&gt;[,&lt;argname2&gt;...]]</code></dt>
-<dd><p>		Defines a macro which can be referenced by </code>&lt;name&gt;</code>.
+<dd><p>		Defines a macro which can be referenced by <code>&lt;name&gt;</code>.
 	The macro definition is terminated by an <code>endm</code> directive. Up to 64
 	named arguments, separated by commas, may be defined for use within the macro 
 	context, wherein they must be precedded by a backslash like so: <code>\argname</code>.
@@ -726,12 +732,13 @@ CPU- and output-module allow it):
 <dt><code>xdef &lt;symbol&gt;[,&lt;symbol&gt;...]</code></dt>
 <dd><p>      Flag <code>&lt;symbol&gt;</code> as externally visible, which means that
       <code>&lt;symbol&gt;</code> is visible to all modules in the linking process.
+	  See also <code>global</code>.
 </p>
 </dd>
 
 <dt><code>xref &lt;symbol&gt;[,&lt;symbol&gt;...]</code></dt>
 <dd><p>      Flag <code>&lt;symbol&gt;</code> as externally defined, which means it has to
-      be imported from another module into the linking process.
+      be imported from another module into the linking process. See also <code>global</code>.
 </p>
 </dd>
 

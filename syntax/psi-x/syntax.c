@@ -1351,6 +1351,7 @@ struct {
   "pushs",handle_pushsect,
   "pops",handle_popsect,
 
+  "global",handle_global,
   "xref",handle_xref,
   "xdef",handle_xdef,
 
