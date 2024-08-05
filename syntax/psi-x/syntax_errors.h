@@ -11,8 +11,8 @@
   "identifier expected",ERROR,								/* 10 */
   "assembly failed",FATAL|ERROR,							/* 11 */
   "unexpected \"%s\" without \"%s\"",ERROR,					/* 12 */
-  ", expected",WARNING,										/* 13 */
-  "maximum inline nesting depth exceeded (%d)",ERROR,		/* 14 */
+  "\",\" expected",WARNING,									/* 13 */
+  "maximum module nesting depth exceeded (%d)",ERROR,		/* 14 */
   "invalid message severity",ERROR,							/* 15 */
 
   "\nuser-defined message: %s",MESSAGE,						/* 16 */
@@ -23,3 +23,4 @@
   "skipping instruction in struct init",WARNING,			/* 20 */
   "last %d bytes of string constant have been cut",WARNING,	/* 21 */
   "invalid numeric expansion",ERROR,						/* 22 */
+  "enclosed macro argument missing \"}\"",ERROR,			/* 23 */

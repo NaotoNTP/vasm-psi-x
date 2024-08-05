@@ -37,7 +37,7 @@ static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
 
-static char rs_name[] = "__RS";
+static char rs_caps[] = "__RS",rs_name[] = "__rs";
 
 static struct namelen macro_dirlist[] = {
   { 5,"macro" }, { 0,0 }
@@ -71,13 +71,13 @@ static char current_pc_str[2];
 static int radix_base = 10;
 
 /* special constants */
-static char year_const[] = "__YEAR";
-static char month_const[] = "__MONTH";
-static char day_const[] = "__DAY";
-static char weekday_const[] = "__WEEKDAY";
-static char hours_const[] = "__HOURS";
-static char minutes_const[] = "__MINUTES";
-static char seconds_const[] = "__SECONDS";
+static char year_caps[] = "_YEAR",year_name[] = "_year";
+static char month_caps[] = "_MONTH",month_name[] = "_month";
+static char day_caps[] = "_DAY",day_name[] = "_day";
+static char weekday_caps[] = "_WEEKDAY",weekday_name[] = "_weekday";
+static char hours_caps[] = "_HOURS",hours_name[] = "_hours";
+static char minutes_caps[] = "_MINUTES",minutes_name[] = "_minutes";
+static char seconds_caps[] = "_SECONDS",seconds_name[] = "_seconds";
 
 /* isolated local labels block */
 #define INLSTACKSIZE 100
@@ -361,12 +361,12 @@ strbuf *get_local_label(int n,char **start)
  */
 static void handle_rsreset(char *s)
 {
-  new_abs(rs_name,number_expr(0));
+  new_abs(rs_caps,number_expr(0));
 }
 
 static void handle_rsset(char *s)
 {
-  new_abs(rs_name,parse_expr_tmplab(&s));
+  new_abs(rs_caps,parse_expr_tmplab(&s));
 }
 
 /* make the given struct- or frame-offset symbol dividable my the next
@@ -387,7 +387,7 @@ static void setoffset_align(char *symname,int dir,utaddr align)
 
 static void handle_rseven(char *s)
 {
-  setoffset_align(rs_name,1,2);
+  setoffset_align(rs_caps,1,2);
 }
 
 /* assign value of current struct- or frame-offset symbol to an abs-symbol,
@@ -473,17 +473,17 @@ static symbol *new_setoffset(char *equname,char **s,char *symname,int dir)
 
 static void handle_rs8(char *s)
 {
-  new_setoffset_size(NULL,rs_name,&s,1,1);
+  new_setoffset_size(NULL,rs_caps,&s,1,1);
 }
 
 static void handle_rs16(char *s)
 {
-  new_setoffset_size(NULL,rs_name,&s,1,2);
+  new_setoffset_size(NULL,rs_caps,&s,1,2);
 }
 
 static void handle_rs32(char *s)
 {
-  new_setoffset_size(NULL,rs_name,&s,1,4);
+  new_setoffset_size(NULL,rs_caps,&s,1,4);
 }
 
 /*
@@ -924,16 +924,8 @@ static void handle_comend(char *s)
  */
 static void handle_struct(char *s)
 {
-  strbuf *name;
-
-  if (name = parse_identifier(0,&s)) {
-    s = skip(s);
-    eol(s);
-    if (new_structure(name->str))
-      current_section->flags |= LABELS_ARE_LOCAL;
-  }
-  else
-    syntax_error(10);  /* identifier expected */
+  syntax_error(10);  /* identifier expected */
+  eol(s);
 }
 
 static void handle_endstruct(char *s)
@@ -1359,9 +1351,6 @@ struct {
   "pushs",handle_pushsect,
   "pops",handle_popsect,
 
-  "local",handle_local,
-  "weak",handle_weak,
-  "global",handle_global,
   "xref",handle_xref,
   "xdef",handle_xdef,
 
@@ -1654,7 +1643,7 @@ void parse(void)
 	    	}
 	    }
       else if (offs_directive(s,"rs")) {
-        label = new_setoffset(labname,&s,rs_name,1);
+        label = new_setoffset(labname,&s,rs_caps,1);
       }
       else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
         s = skip(s+4);
@@ -1686,6 +1675,7 @@ void parse(void)
           ierror(0);
         if (new_structure(buf->str))
           current_section->flags |= LABELS_ARE_LOCAL;
+        eol(s);
         continue;
       }
 #ifdef PARSE_CPU_LABEL
@@ -1814,6 +1804,19 @@ char *parse_macro_arg(struct macro *m,char *s,
 {
   arg->len = 0;  /* cannot select specific named arguments */
   param->name = s;
+  
+  if (*s == '{') {
+    /* macro argument enclosed in { ... } */
+    param->name++;
+    while (*++s != '\0') {
+      if (*s == '}') {
+        param->len = s - param->name;
+        return s + 1;
+      }
+    }
+    syntax_error(23); /* enclosed macro argument missing } */
+	  return NULL;
+  }
   s = skip_operand(s);
   param->len = s - param->name;
   return s;
@@ -2028,7 +2031,8 @@ int init_syntax()
 
   cond_init();
   set_internal_abs(REPTNSYM,-1); /* reserve the REPTN symbol */
-  internal_abs(rs_name);
+  sym = internal_abs(rs_caps);
+  refer_symbol(sym,rs_name);     /* lowercase */
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
@@ -2039,40 +2043,47 @@ int init_syntax()
    */
 
   /* year */
-  sym = internal_abs(year_const);
+  sym = internal_abs(year_caps);
+  refer_symbol(sym,year_name);     /* lowercase */
   while (date.tm_year > 100)
     date.tm_year -= 100;
-  set_internal_abs(year_const,date.tm_year);
+  set_internal_abs(year_caps,date.tm_year);
   sym->flags |= EQUATE;
   
   /* month */
-  sym = internal_abs(month_const);
-  set_internal_abs(month_const,date.tm_mon + 1);
+  sym = internal_abs(month_caps);
+  refer_symbol(sym,month_name);     /* lowercase */
+  set_internal_abs(month_caps,date.tm_mon + 1);
   sym->flags |= EQUATE;
 
   /* weekday */
-  sym = internal_abs(weekday_const);
-  set_internal_abs(weekday_const,date.tm_wday + 1);
+  sym = internal_abs(weekday_caps);
+  refer_symbol(sym,weekday_name);     /* lowercase */
+  set_internal_abs(weekday_caps,date.tm_wday + 1);
   sym->flags |= EQUATE;
 
   /* day */
-  sym = internal_abs(day_const);
-  set_internal_abs(day_const,date.tm_mday);
+  sym = internal_abs(day_caps);
+  refer_symbol(sym,day_name);     /* lowercase */
+  set_internal_abs(day_caps,date.tm_mday);
   sym->flags |= EQUATE;
 
   /* hours */
-  sym = internal_abs(hours_const);
-  set_internal_abs(hours_const,date.tm_hour);
+  sym = internal_abs(hours_caps);
+  refer_symbol(sym,hours_name);     /* lowercase */
+  set_internal_abs(hours_caps,date.tm_hour);
   sym->flags |= EQUATE;
 
   /* minutes */
-  sym = internal_abs(minutes_const);
-  set_internal_abs(minutes_const,date.tm_min);
+  sym = internal_abs(minutes_caps);
+  refer_symbol(sym,minutes_name);     /* lowercase */
+  set_internal_abs(minutes_caps,date.tm_min);
   sym->flags |= EQUATE;
 
   /* seconds */
-  sym = internal_abs(seconds_const);
-  set_internal_abs(seconds_const,date.tm_sec);
+  sym = internal_abs(seconds_caps);
+  refer_symbol(sym,seconds_name);     /* lowercase */
+  set_internal_abs(seconds_caps,date.tm_sec);
   sym->flags |= EQUATE;
 
   return 1;
