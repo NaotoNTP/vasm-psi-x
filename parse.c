@@ -781,11 +781,6 @@ int execute_macro(char *name,int name_len,char **q,int *q_len,int nq,
       break;
   }
 
-  if (m->num_argnames >= 0) {
-    if (n > m->num_argnames)
-      general_error(87,m->num_argnames);  /* additional macro arguments ignored */
-    n = m->num_argnames;  /* named arguments define number of args */
-  }
   if (n > maxmacparams) {
     general_error(27,maxmacparams);  /* number of args exceeded */
     n = maxmacparams;

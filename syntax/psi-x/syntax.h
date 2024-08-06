@@ -22,11 +22,14 @@ char *exp_skip(char *);
 /* ignore operand field, when the instruction has no operands */
 #define IGNORE_FIRST_EXTRA_OP 1
 
+/* symbol which contains the number of macro arguments */
+#define NARGSYM "narg"
+
 /* symbol which contains the number of the macro argument shift amount */
-#define CARGSYM "__SHIFTN"
+#define CARGSYM "shiftn"
 
 /* symbol which contains the current rept-endr iteration count */
-#define REPTNSYM "__REPTN"
+#define REPTNSYM "reptn"
 
 /* overwrite macro defaults */
 #define MAXMACPARAMS 64
