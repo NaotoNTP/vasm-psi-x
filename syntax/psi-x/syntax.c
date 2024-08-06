@@ -445,6 +445,7 @@ static symbol *new_setoffset(char *equname,char **s,char *symname,int dir)
   char *start = *s;
   char ext;
 
+#if defined(VASM_CPU_M68K)
   /* get extension character and proceed to operand */
   if (*(start+2) == '.') {
     ext = tolower((unsigned char)*(start+3));
@@ -467,6 +468,23 @@ static symbol *new_setoffset(char *equname,char **s,char *symname,int dir)
     size = 2;  /* defaults to 'w' extension when missing */
     *s = skip(start+2);
   }
+#else
+    ext = tolower((unsigned char)*(start+1));
+    *s = skip(start+2);
+    switch (ext) {
+      case 'b':
+        break;
+      case 'w':
+        size = 2;
+        break;
+      case 'l':
+        size = 4;
+        break;
+      default:
+        syntax_error(1);  /* invalid extension */
+        break;
+    }
+#endif
 
   return new_setoffset_size(equname,symname,s,dir,size);
 }
@@ -1458,9 +1476,13 @@ static int offs_directive(char *s,char *name)
   int len = strlen(name);
   char *d = s + len;
 
+#if defined(VASM_CPU_M68K)
   return !strnicmp(s,name,len) &&
          ((isspace((unsigned char)*d) || ISEOL(d)) ||
           (*d=='.' && (isspace((unsigned char)*(d+2))||ISEOL(d+2))));
+#else
+  return !strnicmp(s,name,len) && (isspace((unsigned char)*(d+1))||ISEOL(d+1));
+#endif
 }
 
 
@@ -1699,9 +1721,6 @@ void parse(void)
         	label = new_abs(labname,parse_expr_tmplab(&s));
 	    	}
 	    }
-      else if (offs_directive(s,"rs")) {
-        label = new_setoffset(labname,&s,rs_name,1);
-      }
       else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
         s = skip(s+4);
         new_strsym(labname,parse_name(0,&s));
@@ -1735,6 +1754,16 @@ void parse(void)
         eol(s);
         continue;
       }
+#if defined(VASM_CPU_M68K)
+      else if (offs_directive(s,"rs")) {
+        label = new_setoffset(labname,&s,rs_name,1);
+      }
+#else
+      else if (offs_directive(s,"r")) {
+        label = new_setoffset(labname,&s,rs_name,1);
+      }
+#endif
+
 #ifdef PARSE_CPU_LABEL
       else if (!PARSE_CPU_LABEL(labname,&s)) {
 #else
