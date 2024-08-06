@@ -611,7 +611,7 @@ static void handle_blk32(char *s)
 /*
  *	Additional Data Directives
  */
-static void handle_data(char *s,int size,int noalign)
+static void handle_generic_data(char *s,int size,int noalign)
 {
   for (;;){
     char *opstart=s;
@@ -653,8 +653,8 @@ static void handle_data(char *s,int size,int noalign)
 }
 
 #if FLOAT_PARSER
-static void handle_single(char *s){ handle_data(s,OPSZ_FLOAT|32,0); }
-static void handle_double(char *s){ handle_data(s,OPSZ_FLOAT|64,0); }
+static void handle_single(char *s){ handle_generic_data(s,OPSZ_FLOAT|32,0); }
+static void handle_double(char *s){ handle_generic_data(s,OPSZ_FLOAT|64,0); }
 #endif
 
 /*
