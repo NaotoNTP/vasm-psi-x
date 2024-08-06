@@ -609,6 +609,55 @@ static void handle_blk32(char *s)
 }
 
 /*
+ *	Additional Data Directives
+ */
+static void handle_data(char *s,int size,int noalign)
+{
+  for (;;){
+    char *opstart=s;
+    operand *op;
+    dblock *db=NULL;
+
+    if((OPSZ_BITS(size)==8 || OPSZ_BITS(size)==16) && *s=='\"'){
+      if(db=parse_string(&opstart,*s,OPSZ_BITS(size))){
+        add_atom(0,new_data_atom(db,1));
+        s=opstart;
+      }
+    }
+    if(!db){
+      op=new_operand();
+      s=skip_operand(s);
+      if(parse_operand(opstart,s-opstart,op,DATA_OPERAND(size))) {
+        atom *a;
+
+        a=new_datadef_atom(OPSZ_BITS(size),op);
+        if(!align_data||noalign)
+          a->align=1;
+        add_atom(0,a);
+      }else
+        syntax_error(8);  /* invalid data operand */
+    }
+
+    s=skip(s);
+    if(*s==',') {
+      s=skip(s+1);
+    }else if(ISEOL(s)){
+      break;
+    }else{
+      general_error(6,',');  /* comma expected */
+      return;
+    }
+  }
+
+  eol(s);
+}
+
+#if FLOAT_PARSER
+static void handle_single(char *s){ handle_data(s,OPSZ_FLOAT|32,0); }
+static void handle_double(char *s){ handle_data(s,OPSZ_FLOAT|64,0); }
+#endif
+
+/*
  *	Program Control Directives
  */
 static void handle_org(char *s)
@@ -947,7 +996,7 @@ static void handle_endstruct(char *s)
 }
 
 /*
- *	Inlining Directives
+ *	Module Directives
  */
 static void handle_module(char *s)
 {
@@ -1254,10 +1303,16 @@ static void handle_end(char *s)
   parse_end = 1;
 }
 
+
+
 struct {
   const char *name;
   void (*func)(char *);
 } directives[] = {
+  "rsset",handle_rsset,	
+  "rsreset",handle_rsreset,
+  "rseven",handle_rseven,
+
 #if defined(VASM_CPU_M68K)
   "rs",handle_rs16,
   "rs.b",handle_rs8,
@@ -1293,16 +1348,17 @@ struct {
 
   "ds",handle_spc8,
 #endif
-  "rsset",handle_rsset,	
-  "rsreset",handle_rsreset,
-  "rseven",handle_rseven,
-
   "org",handle_org,
   "obj",handle_obj,
   "objend",handle_objend,
   "cnop",handle_cnop,
   "even",handle_even,
   "align",handle_align,
+
+#if FLOAT_PARSER
+  "ieee32",handle_single,
+  "ieee64",handle_double,
+#endif
 
   "incdir",handle_incdir,
   "include",handle_include,

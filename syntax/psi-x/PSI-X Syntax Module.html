@@ -351,6 +351,14 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>ieee32 &lt;fpnum1&gt;[,&lt;fpnum2&gt;...]</code></dt>
+<dt><code>ieee64 &lt;fpnum1&gt;[,&lt;fpnum2&gt;...]</code></dt>
+<dd><p>      Floating-point define constant directives. Assigns the constant floating-point number values to successive 
+	bytes of memory in the current section. <code>ieee32</code> is used to define single-precision floating-point values,
+	while <code>ieee64</code> is used to define double-precision floating-point values.
+</p>
+</dd>
+
 <dt><code>if &lt;expression&gt;</code></dt>
 <dd><p>      Conditionally assemble the following lines if <code>&lt;expression&gt;</code> is non-zero.
 </p>
@@ -524,7 +532,7 @@ CPU- and output-module allow it):
 
 <dt><code>\#</code></dt>
 <dd><p>      Insert the number of arguments that have been passed to this macro call.
-      Note that the value this parameter evaluates to passed will be affected by the 
+      Note that the value this parameter evaluates to will not be affected by the 
 	  <code>shift</code> directive.
 </p></dd>
 
