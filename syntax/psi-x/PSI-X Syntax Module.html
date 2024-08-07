@@ -745,7 +745,7 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>&lt;name&gt; struct/strend</code></dt>
+<dt><code>&lt;name&gt; struct/ends</code></dt>
 <dd><p>      Defines a structure which can be referenced by <code>&lt;name&gt;</code>. Labels within
       a structure definitation can be used as field offsets. They will be
       defined as local labels of <code>&lt;name&gt;</code> and can be referenced through
@@ -753,7 +753,7 @@ CPU- and output-module allow it):
       be ignored when such a structure is used. Data definitions can be used as
       default values when the structure is used as initializer. The structure
       name, <code>&lt;name&gt;</code>, is defined as a global symbol with the structure&rsquo;s size.
-      A structure definition is ended by <code>strend</code>. See the additional section titled "Structures"
+      A structure definition is ended by <code>ends</code>. See the additional section titled "Structures"
 	  for more information.
 </p>
 </dd>
@@ -780,7 +780,7 @@ Structures are defined as follows:
 </p><div class="example">
 <pre class="example">mylabel struct
         &lt;fields&gt;
-        strend
+        ends
 </pre></div>
  
 
@@ -794,7 +794,7 @@ value, whenever no value is given for a field when the structure is referenced.
 x	dc.b	4
 y	dc.b	5
 z	dc.b	6
-	strend
+	ends
 </pre></div>
 
 <p>This will create the following labels:

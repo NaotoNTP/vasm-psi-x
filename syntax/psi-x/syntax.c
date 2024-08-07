@@ -68,7 +68,10 @@ static char local_char = '.';
 static char *labname;  /* current label field for assignment directives */
 static unsigned anon_labno;
 static char current_pc_str[2];
+
 static int radix_base = 10;
+static int public_status = 0;
+static int data_size = 8;
 
 /* special constants */
 static char year_name[] = "_year";
@@ -635,50 +638,25 @@ static void handle_blk32(char *s)
 /*
  *	Additional Data Directives
  */
-static void handle_generic_data(char *s,int size,int noalign)
+static void handle_datasize(char *s)
 {
-  for (;;){
-    char *opstart=s;
-    operand *op;
-    dblock *db=NULL;
+  int size = parse_constexpr(&s);
 
-    if((OPSZ_BITS(size)==8 || OPSZ_BITS(size)==16) && *s=='\"'){
-      if(db=parse_string(&opstart,*s,OPSZ_BITS(size))){
-        add_atom(0,new_data_atom(db,1));
-        s=opstart;
-      }
-    }
-    if(!db){
-      op=new_operand();
-      s=skip_operand(s);
-      if(parse_operand(opstart,s-opstart,op,DATA_OPERAND(size))) {
-        atom *a;
-
-        a=new_datadef_atom(OPSZ_BITS(size),op);
-        if(!align_data||noalign)
-          a->align=1;
-        add_atom(0,a);
-      }else
-        syntax_error(8);  /* invalid data operand */
-    }
-
-    s=skip(s);
-    if(*s==',') {
-      s=skip(s+1);
-    }else if(ISEOL(s)){
-      break;
-    }else{
-      general_error(6,',');  /* comma expected */
-      return;
-    }
-  }
-
+  if ((size < 1) || (size > 256))
+    syntax_error(25,size);  /* invalid data size value */
+  else
+    data_size = (size<<3);
   eol(s);
 }
 
+static void handle_data(char *s)
+{
+  handle_datadef(s,data_size);
+}
+
 #if FLOAT_PARSER
-static void handle_single(char *s){ handle_generic_data(s,OPSZ_FLOAT|32,0); }
-static void handle_double(char *s){ handle_generic_data(s,OPSZ_FLOAT|64,0); }
+static void handle_single(char *s){ handle_datadef(s,OPSZ_FLOAT|32); }
+static void handle_double(char *s){ handle_datadef(s,OPSZ_FLOAT|64); }
 #endif
 
 /*
@@ -1247,6 +1225,28 @@ static void handle_xdef(char *s)
   do_bind(s,EXPORT|XDEF);
 }
 
+static void handle_public(char *s)
+{
+  s = skip(s);
+
+  if (!strnicmp(s,"on",2) &&
+        (isspace((unsigned char)*(s+2)) || *(s+2)=='\0'
+          || *(s+2)==commentchar)) {
+    s = skip(s+2);
+    public_status = 1;
+  }
+  else if (!strnicmp(s,"off",3) &&
+            (isspace((unsigned char)*(s+3)) || *(s+3)=='\0'
+              || *(s+3)==commentchar)) {
+    s = skip(s+3);
+    public_status = 0;
+  }
+  else
+    syntax_error(24);  /* invalid public parameter */
+
+  eol(s);
+}
+
 /*
  *	Miscellaneous Directives
  */
@@ -1340,8 +1340,6 @@ static void handle_end(char *s)
   parse_end = 1;
 }
 
-
-
 struct {
   const char *name;
   void (*func)(char *);
@@ -1389,17 +1387,22 @@ struct {
   "dsw",handle_spc16,
   "dsl",handle_spc32,
 #endif
-  "org",handle_org,
-  "obj",handle_obj,
-  "objend",handle_objend,
-  "cnop",handle_cnop,
-  "even",handle_even,
-  "align",handle_align,
 
 #if FLOAT_PARSER
   "ieee32",handle_single,
   "ieee64",handle_double,
 #endif
+
+  "org",handle_org,
+  "obj",handle_obj,
+  "objend",handle_objend,
+  /*
+  "data",handle_data,
+  "datasize",handle_datasize,
+  */
+  "cnop",handle_cnop,
+  "even",handle_even,
+  "align",handle_align,
 
   "incdir",handle_incdir,
   "include",handle_include,
@@ -1429,7 +1432,7 @@ struct {
   "comend",handle_comend,
 
   "struct",handle_struct,
-  "strend",handle_endstruct,
+  "ends",handle_endstruct,
 
   "module",handle_module,
   "modend",handle_endmodule,
@@ -1451,6 +1454,7 @@ struct {
   "global",handle_global,
   "xref",handle_xref,
   "xdef",handle_xdef,
+  "public",handle_public,
 
   "radix",handle_radix,
   "disable",handle_disable,
@@ -1705,16 +1709,16 @@ void parse(void)
       continue;
     }
 
-  if (labname = parse_label_or_pc(&s)) {
-    /* we have found a global or local label, or current-pc character */
-    uint32_t symflags = 0;
-    symbol *label;
+    if (labname = parse_label_or_pc(&s)) {
+      /* we have found a global or local label, or current-pc character */
+      uint32_t symflags = 0;
+      symbol *label;
 
-    if (*s == ':') {
-      /* double colon automatically declares label as exported */
-      symflags |= EXPORT;
-      s++;
-    }
+      if (*s == ':') {
+        /* double colon automatically declares label as exported */
+        symflags |= EXPORT|XDEF;
+        s++;
+      }
 
       s = skip(s);
 
@@ -1814,11 +1818,14 @@ void parse(void)
       }
 
       if (!is_local_label(labname) && auto_export)
-          label->flags |= EXPORT;
+        label->flags |= EXPORT|XDEF;
+
+      if (public_status)
+        label->flags |= EXPORT|XDEF;
     }
 
     /* check for directives */
-	s = skip(s);
+	  s = skip(s);
     if (*s==commentchar)
       continue;
 
@@ -1831,7 +1838,7 @@ void parse(void)
     if (handle_directive(s))
       continue;
 	
-	s = skip(s);
+	  s = skip(s);
     if (ISEOL(s))
       continue;
 
@@ -2160,13 +2167,6 @@ int init_syntax()
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
   esc_sequences = 1;
-
-  /*
-  sym = internal_abs("__TEST__");
-  set_internal_abs(sym->name,185);
-  refer_symbol(sym,"_test");
-  undef_internal_sym(sym->name,nocase);
-  */
   
   /*
    * Date & Time Constant Definitions 
