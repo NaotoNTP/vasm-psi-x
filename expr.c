@@ -213,16 +213,8 @@ static expr *primary_expr(void)
     symbol *sym;    
     EXPSKIP();
     sym=find_symbol(buf->str);
+
     if(!sym){
-#ifdef NARGSYM
-      int match = nocase?!stricmp(buf->str,NARGSYM):!strcmp(buf->str,NARGSYM);
-      if(match){
-        new=new_expr();
-        new->type=NUM;
-        new->c.val=cur_src->num_params; /*@@@ check for macro mode? */
-        return new;
-      }
-#endif
       sym=new_import(buf->str);
     }
     sym->flags|=USED;

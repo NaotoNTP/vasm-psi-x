@@ -391,7 +391,6 @@ symbol *internal_abs(const char *name)
   return new;
 }
 
-
 expr *set_internal_abs(const char *name,taddr newval)
 {
   symbol *sym = internal_abs(name);
@@ -404,6 +403,21 @@ expr *set_internal_abs(const char *name,taddr newval)
   if (newval != oldval)
     sym->expr = number_expr(newval);
   return oldexpr;
+}
+
+/* remove an internal symbol from the hash table */
+int undef_internal_sym(const char *name,int no_case)
+{
+  symbol *sym = internal_abs(name);
+
+  if (sym != NULL && (sym->flags & VASMINTERN)) {
+      rem_hashentry(symhash,name,no_case);
+      return 1;
+  }
+  else
+    general_error(90,name);  /* internal symbol not found */
+
+  return 0;
 }
 
 

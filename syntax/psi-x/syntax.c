@@ -37,7 +37,7 @@ static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
 
-static char rs_name[] = "__rs";
+static char rs_name[] = "{__RS__}";
 
 static struct namelen macro_dirlist[] = {
   { 5,"macro" }, { 0,0 }
@@ -469,8 +469,9 @@ static symbol *new_setoffset(char *equname,char **s,char *symname,int dir)
     *s = skip(start+2);
   }
 #else
-    ext = tolower((unsigned char)*(start+1));
-    *s = skip(start+2);
+  if (isalnum((unsigned char)*(start+2))) {
+    ext = tolower((unsigned char)*(start+2));
+    *s = skip(start+3);
     switch (ext) {
       case 'b':
         break;
@@ -484,6 +485,11 @@ static symbol *new_setoffset(char *equname,char **s,char *symname,int dir)
         syntax_error(1);  /* invalid extension */
         break;
     }
+  }
+  else {
+    size = 1;  /* defaults to 'b' extension when missing */
+    *s = skip(start+2);
+  }
 #endif
 
   return new_setoffset_size(equname,symname,s,dir,size);
@@ -1258,6 +1264,19 @@ static void handle_radix(char *s)
   eol(s);
 }
 
+static void handle_disable(char *s)
+{
+  strbuf *name;
+
+  if (!(name = parse_identifier(0,&s))) {
+    syntax_error(10);  /* identifier expected */
+    return;
+  }
+
+  undef_internal_sym(name->str,nocase);
+  eol(s);
+}
+
 static void handle_inform(char *s)
 {
   int severity = parse_constexpr(&s);
@@ -1352,9 +1371,10 @@ struct {
   "ds.w",handle_spc16,
   "ds.l",handle_spc32,
 #else
-  "rb",handle_rs8,
-  "rw",handle_rs16,
-  "rl",handle_rs32,
+  "rs",handle_rs8,
+  "rsb",handle_rs8,
+  "rsw",handle_rs16,
+  "rsl",handle_rs32,
 
   "db",handle_d8,
   "dw",handle_d16,
@@ -1365,6 +1385,9 @@ struct {
   "dcl",handle_blk32,
 
   "ds",handle_spc8,
+  "dsb",handle_spc8,
+  "dsw",handle_spc16,
+  "dsl",handle_spc32,
 #endif
   "org",handle_org,
   "obj",handle_obj,
@@ -1430,6 +1453,7 @@ struct {
   "xdef",handle_xdef,
 
   "radix",handle_radix,
+  "disable",handle_disable,
   "inform",handle_inform,
   "list",handle_list,
   "nolist",handle_nolist,
@@ -1481,7 +1505,7 @@ static int offs_directive(char *s,char *name)
          ((isspace((unsigned char)*d) || ISEOL(d)) ||
           (*d=='.' && (isspace((unsigned char)*(d+2))||ISEOL(d+2))));
 #else
-  return !strnicmp(s,name,len) && (isspace((unsigned char)*(d+1))||ISEOL(d+1));
+  return !strnicmp(s,name,len) && (tolower((unsigned char)*(d))!='t' && (isspace((unsigned char)*(d+1))||ISEOL(d+1)));
 #endif
 }
 
@@ -1681,16 +1705,16 @@ void parse(void)
       continue;
     }
 
-    if (labname = parse_label_or_pc(&s)) {
-      /* we have found a global or local label, or current-pc character */
-      uint32_t symflags = 0;
-      symbol *label;
+  if (labname = parse_label_or_pc(&s)) {
+    /* we have found a global or local label, or current-pc character */
+    uint32_t symflags = 0;
+    symbol *label;
 
-      if (*s == ':') {
-        /* double colon automatically declares label as exported */
-        symflags |= EXPORT;
-        s++;
-      }
+    if (*s == ':') {
+      /* double colon automatically declares label as exported */
+      symflags |= EXPORT;
+      s++;
+    }
 
       s = skip(s);
 
@@ -1724,6 +1748,27 @@ void parse(void)
       else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
         s = skip(s+4);
         new_strsym(labname,parse_name(0,&s));
+        eol(s);
+        continue;
+      }
+      else if (!strnicmp(s,"alias",5) && isspace((unsigned char)*(s+5))) {
+        strbuf *buf;
+        symbol *sym;
+
+        s = skip(s+5);
+
+        if (!(buf = parse_identifier(1,&s))) {
+          syntax_error(10);  /* identifier expected */
+          continue;        
+        }
+
+        if (!(sym = find_symbol(buf->str)) || !(sym->flags & VASMINTERN)) {
+          general_error(90,buf->str);  /* internal symbol not found */
+          continue;
+        }
+
+        refer_symbol(sym,mystrdup(labname));
+        eol(s);
         continue;
       }
       else if (!strnicmp(s,"macro",5) &&
@@ -1751,18 +1796,11 @@ void parse(void)
           ierror(0);
         if (new_structure(buf->str))
           current_section->flags |= LABELS_ARE_LOCAL;
-        eol(s);
         continue;
       }
-#if defined(VASM_CPU_M68K)
       else if (offs_directive(s,"rs")) {
         label = new_setoffset(labname,&s,rs_name,1);
       }
-#else
-      else if (offs_directive(s,"r")) {
-        label = new_setoffset(labname,&s,rs_name,1);
-      }
-#endif
 
 #ifdef PARSE_CPU_LABEL
       else if (!PARSE_CPU_LABEL(labname,&s)) {
@@ -1876,12 +1914,17 @@ void parse(void)
 /* src is the new macro source, cur_src is still the parent source */
 void my_exec_macro(source *src)
 {
-  symbol *shift;
+  symbol *sym;
 
   /* reset the macro argument shift amount to 0, selecting the first macro parameter */
-  shift = internal_abs(CARGSYM);
-  cur_src->cargexp = shift->expr;  /* remember last argument shift amount */
-  shift->expr = number_expr(0);
+  sym = internal_abs(CARGSYM);
+  cur_src->cargexp = sym->expr;  /* remember last argument shift amount */
+  sym->expr = number_expr(0);
+
+  /* set the argument count for the current macro call */
+  sym = internal_abs(NARGSYM);
+  cur_src->nargexp = sym->expr;  /* remember last argument count */
+  sym->expr->c.val = src->num_params;
 }
 
 /* parse next macro argument */
@@ -2105,11 +2148,25 @@ int init_syntax()
 
   cond_init();
   set_internal_abs(REPTNSYM,-1); /* reserve the REPTN symbol */
+  
+  /* refer Psy-Q names to inaccessible internal symbols */
+  sym = internal_abs(NARGSYM);
+  refer_symbol(sym,"narg");
+  
   sym = internal_abs(rs_name);
+  refer_symbol(sym,"__rs");
+
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
   esc_sequences = 1;
+
+  /*
+  sym = internal_abs("__TEST__");
+  set_internal_abs(sym->name,185);
+  refer_symbol(sym,"_test");
+  undef_internal_sym(sym->name,nocase);
+  */
   
   /*
    * Date & Time Constant Definitions 

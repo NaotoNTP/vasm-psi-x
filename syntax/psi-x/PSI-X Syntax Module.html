@@ -199,6 +199,14 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>&lt;symbol&gt; alias &lt;inernalsym&gt;</code></dt>
+<dd><p>      Allows the programmer to asign an alternate name given by <code>&lt;symbol&gt;</code>
+	to the internal, reserved symbol specified <code>&lt;inernalsym&gt;</code>. Can also be used to
+	reactivate internal symbol names that were deactivated by the <code>disable</code> directive; simply
+	do the following with an existing alias: <code>&lt;inernalsym&gt; alias &lt;symbol&gt;</code>.
+</p>
+</dd>
+
 <dt><code>align &lt;alignment&gt;[,&lt;fill&gt;]</code></dt>
 <dd><p>      Insert as many padding bytes as are needed to reach an address divisible 
 	  by <code>&lt;alignment&gt;</code>. For example <code>align 4</code> would pad fill bytes
@@ -216,6 +224,14 @@ CPU- and output-module allow it):
 <dt><code>comment/comend</code></dt>
 <dd><p>      Multi-line comment directives. The assembler will ignore everything from encountering the <code>comment</code>
 	directive until a <code>comend</code> directive is found, at which point normal assembly continues.
+</p>
+</dd>
+
+<dt><code>disable &lt;inernalsym&gt;</code></dt>
+<dd><p>      Allows the programmer to disable the internal, reserved symbol specified <code>&lt;inernalsym&gt;</code>.
+	Useful for avoiding name conflicts with the programmer's own symbols. It is recommended, but not required,
+	that this directive is used in conjuction with the <code>alias</code> directive to assign the internal symbol
+	an alternate name by which it can be referenced at the programmer's discretion.
 </p>
 </dd>
 
@@ -252,8 +268,12 @@ CPU- and output-module allow it):
 </dd>
 
 <dt><code>ds &lt;exp&gt;</code></dt>
-<dd><p>      Z80/6502 define storage directive. Equivalent to <code>dcb &lt;exp&gt;,0</code>.
-	Intended for defining storage in sections with uninitialized data. 
+<dt><code>dsb &lt;exp&gt;</code></dt>
+<dt><code>dsw &lt;exp&gt;</code></dt>
+<dt><code>dsl &lt;exp&gt;</code></dt>
+<dd><p>      Z80/6502 define storage directives. Equivalent to declaring a constant block with a fill value of zero.
+	Intended for defining storage in sections with uninitialized data. <code>ds/dsb</code> corresponds to byte storage,
+	<code>dsw</code> corresponds to word storage, and <code>dsl</code> corresponds to longword storage.
 </p>
 </dd>
 
@@ -612,18 +632,19 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>&lt;label&gt; rb &lt;expression&gt;</code></dt>
-<dt><code>&lt;label&gt; rw &lt;expression&gt;</code></dt>
-<dt><code>&lt;label&gt; rl &lt;expression&gt;</code></dt>
-<dd><p>      Z80/6502 reserve symbol directives. Assigns the current value of the reserve symbol counter (<code>__RS</code>) to
+<dt><code>&lt;label&gt; rs &lt;expression&gt;</code></dt>
+<dt><code>&lt;label&gt; rsb &lt;expression&gt;</code></dt>
+<dt><code>&lt;label&gt; rsw &lt;expression&gt;</code></dt>
+<dt><code>&lt;label&gt; rsl &lt;expression&gt;</code></dt>
+<dd><p>      Z80/6502 reserve symbol directives. Assigns the current value of the reserve symbol counter (<code>__rs</code>) to
 	<code>&lt;label&gt;</code>. Afterwards, the counter is incremented by an ammount corresponding to the directive's size 
-	multiplied by <code>&lt;expression&gt;</code>: <code>rb</code> corresponds to byte, <code>rw</code> corresponds to word, 
-	and <code>rl</code> corresponds to longword.
+	multiplied by <code>&lt;expression&gt;</code>: <code>rs/rsb</code> corresponds to byte, <code>rsw</code> corresponds to word, 
+	and <code>rsl</code> corresponds to longword.
 </p>
 </dd>
 
 <dt><code>&lt;label&gt; rs[.&lt;sz&gt;] &lt;expression&gt;</code></dt>
-<dd><p>      M68K reserve symbol directive. Assigns the current value of the reserve symbol counter (<code>__RS</code>) to
+<dd><p>      M68K reserve symbol directive. Assigns the current value of the reserve symbol counter (<code>__rs</code>) to
 	<code>&lt;label&gt;</code>. Afterwards, the counter is incremented by the directives&rsquo;s size
 	(<code>&lt;sz&gt;</code>) multiplied by <code>&lt;expression&gt;</code>.
 	<code>&lt;sz&gt;</code> defaults to <code>w</code> when not specified.
@@ -631,15 +652,15 @@ CPU- and output-module allow it):
 </dd>
 
 <dt><code>rseven</code></dt>
-<dd><p>      Aligns the reserve symbol counter (<code>__RS</code>) to an even count.
+<dd><p>      Aligns the reserve symbol counter (<code>__rs</code>) to an even count.
 </p>
 </dd>
 <dt><code>rsreset</code></dt>
-<dd><p>      Resets the reserve symbol counter (<code>__RS</code>) to zero.
+<dd><p>      Resets the reserve symbol counter (<code>__rs</code>) to zero.
 </p>
 </dd>
 <dt><code>rsset &lt;expression&gt;</code></dt>
-<dd><p>      Sets the reserve symbol counter (<code>__RS</code>) to <code>&lt;expression&gt;</code>.
+<dd><p>      Sets the reserve symbol counter (<code>__rs</code>) to <code>&lt;expression&gt;</code>.
 </p>
 </dd>
 

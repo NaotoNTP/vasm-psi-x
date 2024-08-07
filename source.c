@@ -219,6 +219,9 @@ source *new_source(char *srcname,struct source_file *srcfile,
   s->line = 0;
   s->bufsize = INITLINELEN;
   s->linebuf = mymalloc(INITLINELEN);
+#ifdef NARGSYM
+  s->nargexp = NULL;
+#endif
 #ifdef CARGSYM
   s->cargexp = NULL;
 #endif

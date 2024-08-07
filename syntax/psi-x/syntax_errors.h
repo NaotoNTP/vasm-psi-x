@@ -15,10 +15,10 @@
   "maximum module nesting depth exceeded (%d)",ERROR,		/* 14 */
   "invalid message severity",ERROR,							/* 15 */
 
-  "\nuser-defined message: %s",MESSAGE,						/* 16 */
-  "\nuser-defined warning: %s",WARNING,						/* 17 */
-  "\nuser-defined error: %s",ERROR,							/* 18 */
-  "\nuser-defined fatal error: %s",FATAL|ERROR,				/* 19 */
+  "\nuser-defined message: %s",NOLINE|MESSAGE,				/* 16 */
+  "\nuser-defined warning: %s",NOLINE|WARNING,				/* 17 */
+  "\nuser-defined error: %s",NOLINE|ERROR,					/* 18 */
+  "\nuser-defined fatal error: %s",NOLINE|FATAL|ERROR,		/* 19 */
 
   "skipping instruction in struct init",WARNING,			/* 20 */
   "last %d bytes of string constant have been cut",WARNING,	/* 21 */

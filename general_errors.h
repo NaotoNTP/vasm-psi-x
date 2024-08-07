@@ -88,3 +88,4 @@
   "additional macro arguments ignored (expecting %d)",WARNING,
   "string symbol <%s> redefined",ERROR,
   "symbol <%s> cannot be redefined as a string symbol",ERROR,
+  "internal symbol <%s> not found",ERROR,						/* 90 */

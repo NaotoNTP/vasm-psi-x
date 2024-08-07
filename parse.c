@@ -1056,6 +1056,12 @@ char *read_next_line(void)
         if (cur_src->parent == NULL)
           return NULL;  /* no parent source means end of assembly! */
         cur_src = cur_src->parent;  /* return to parent source */
+#ifdef NARGSYM
+        if (cur_src->nargexp) {
+          symbol *narg = internal_abs(NARGSYM);
+          narg->expr = cur_src->nargexp;  /* restore parent NARG */
+        }
+#endif
 #ifdef CARGSYM
         if (cur_src->cargexp) {
           symbol *carg = internal_abs(CARGSYM);

@@ -51,6 +51,9 @@ struct source {
   int line;
   size_t bufsize;
   char *linebuf;
+#ifdef NARGSYM
+  expr *nargexp;
+#endif
 #ifdef CARGSYM
   expr *cargexp;
 #endif

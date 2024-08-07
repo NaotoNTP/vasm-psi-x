@@ -23,13 +23,13 @@ char *exp_skip(char *);
 #define IGNORE_FIRST_EXTRA_OP 1
 
 /* symbol which contains the number of macro arguments */
-#define NARGSYM "narg"
+#define NARGSYM "{__NARG__}"
 
 /* symbol which contains the number of the macro argument shift amount */
-#define CARGSYM "shiftn"
+#define CARGSYM "{__SHIFTN__}"
 
 /* symbol which contains the current rept-endr iteration count */
-#define REPTNSYM "reptn"
+#define REPTNSYM "{__REPTN__}"
 
 /* overwrite macro defaults */
 #define MAXMACPARAMS 64
