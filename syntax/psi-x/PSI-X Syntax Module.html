@@ -603,6 +603,13 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>public &lt;'on' or 'off&gt;</code></dt>
+<dd><p>      Directive to automatically make declared symbols/labels externally visible. 
+	<code>public on</code> makes all new symbol/label declarations following it externally
+	visible, <code>public off</code> disables this behavior. Off by default. See also <code>xdef</code>.
+</p>
+</dd>
+
 <dt><code>purge &lt;macro&gt;[,&lt;macro&gt;...]</code></dt>
 <dd><p>      Undefine one or more already defined macros, making them unknown for
       the following source to assemble.

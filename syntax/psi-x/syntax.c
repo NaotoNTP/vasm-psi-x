@@ -1720,6 +1720,9 @@ void parse(void)
         s++;
       }
 
+      if (public_status)
+        label->flags |= EXPORT|XDEF;
+
       s = skip(s);
 
       s = handle_iif(s);
@@ -1818,9 +1821,6 @@ void parse(void)
       }
 
       if (!is_local_label(labname) && auto_export)
-        label->flags |= EXPORT|XDEF;
-
-      if (public_status)
         label->flags |= EXPORT|XDEF;
     }
 
