@@ -227,6 +227,23 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>data &lt;value1&gt;[,&lt;value2&gt;...]</code></dt>
+<dd><p>      Assigns the constant integer values of the list of operands into successive bytes 
+	of memory within the current section. Works similarly to the declare constant directives, but the 
+	size each value occupies in bytes is specified by a value given to the <code>datasize</code> directive.
+	Currently exclusive to M68K.
+</p>
+</dd>
+
+<dt><code>datasize &lt;size&gt;</code></dt>
+<dd><p>      Specifies the number of bytes each operand of the <code>data</code> directive should occupy in memory.
+	The accepted range is between between 1 and 16 bytes (8 to 128 bits). The default value is set to 1 byte.
+	Note that the base specified by the <code>radix</code> does not affect how the value of <code>&lt;size&gt;</code>
+	is parsed when no numeric base prefix/suffix is given; it will always be parsed as a decimal value when a prefix/suffix
+	is absent. Currently exclusive to M68K.
+</p>
+</dd>
+
 <dt><code>disable &lt;inernalsym&gt;</code></dt>
 <dd><p>      Allows the programmer to disable the internal, reserved symbol specified <code>&lt;inernalsym&gt;</code>.
 	Useful for avoiding name conflicts with the programmer's own symbols. It is recommended, but not required,
@@ -239,7 +256,7 @@ CPU- and output-module allow it):
 <dt><code>dw &lt;exp1&gt;[,&lt;exp2&gt;...]</code></dt>
 <dt><code>dl &lt;exp1&gt;[,&lt;exp2&gt;...]</code></dt>
 <dd><p>      Z80/6502 declare constant directives. Assigns the constant integer values of the list of operands 
-	into successive bytes of memory in the current section. How many bytes each operand value occupies depends on the specific directive used:
+	into successive bytes of memory within the current section. How many bytes each operand value occupies depends on the specific directive used:
 	<code>db</code> assigns bytes, <code>dw</code> assigns words, and <code>dl</code> assigns longwords. Additionally, <code>db</code> accepts string operands, 
 	wherein each character in the string is assigned to consecutive bytes in memory, in the order they appear.
 </p>
@@ -247,7 +264,7 @@ CPU- and output-module allow it):
 
 <dt><code>dc[.&lt;sz&gt;] &lt;exp1&gt;[,&lt;exp2&gt;,&quot;&lt;str1&gt;&quot;,'&lt;str2&gt;'...]</code></dt>
 <dd><p>      M68K declare constant directive. Assigns the constant integer values of the list of operands 
-	into successive bytes of memory in the current section. <code>&lt;sz&gt;</code> defaults to <code>w</code> when not specified.
+	into successive bytes of memory within the current section. <code>&lt;sz&gt;</code> defaults to <code>w</code> when not specified.
 	When a <code>&lt;sz&gt;</code> of <code>b</code> is specified, strings can also be given as operands.
 </p>
 </dd>
@@ -371,10 +388,20 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>hex &lt;hexstream&gt;</code></dt>
+<dd><p>      Assigns a stream of hex values into successive bytes of memory within the current section.
+	This directive serves as a quick way to declare hex data; an even number of nybbles must be specified,
+	suffixes/prefixes should be ommitted, and no space or delimiting characters should be present in the operand.
+	It is recommended that users limit their use of this directive by making use of other data declaration and 
+	binary file inclusion directives wherever possible, as the resulting hex-streams are often less readable and
+	make more work for the assembler.
+</p>
+</dd>
+
 <dt><code>ieee32 &lt;fpnum1&gt;[,&lt;fpnum2&gt;...]</code></dt>
 <dt><code>ieee64 &lt;fpnum1&gt;[,&lt;fpnum2&gt;...]</code></dt>
 <dd><p>      Floating-point define constant directives. Assigns the constant floating-point number values to successive 
-	bytes of memory in the current section. <code>ieee32</code> is used to define single-precision floating-point values,
+	bytes of memory within the current section. <code>ieee32</code> is used to define single-precision floating-point values,
 	while <code>ieee64</code> is used to define double-precision floating-point values.
 </p>
 </dd>

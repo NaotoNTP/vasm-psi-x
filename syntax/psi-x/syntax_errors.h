@@ -26,4 +26,4 @@
   "enclosed macro argument missing \"}\"",ERROR,							/* 23 */
 
   "invalid \"public\" parameter (must be either \"on\" or \"off\")",ERROR,	/* 24 */
-  "invalid data size value (%d)",ERROR,										/* 25 */
+  "invalid data size value (%d bytes)",ERROR,								/* 25 */

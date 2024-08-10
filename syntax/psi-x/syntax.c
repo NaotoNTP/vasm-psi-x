@@ -640,12 +640,17 @@ static void handle_blk32(char *s)
  */
 static void handle_datasize(char *s)
 {
-  int size = parse_constexpr(&s);
+  int size, base = radix_base;
+
+  radix_base = 10;
+  size = parse_constexpr(&s);
 
   if ((size < 1) || (size > 16))
     syntax_error(25,size);  /* invalid data size value */
   else
     data_size = (size<<3);
+
+  radix_base = base;
   eol(s);
 }
 
