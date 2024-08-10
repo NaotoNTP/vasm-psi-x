@@ -654,6 +654,19 @@ static void handle_data(char *s)
   handle_datadef(s,data_size);
 }
 
+static void handle_hex(char *s)
+{
+  dblock *db = NULL;
+
+  s = skip(s);
+
+  if (db = parse_hexstream(&s))
+    add_atom(0,new_data_atom(db,1));
+
+  s = skip(s);
+  eol(s);
+}
+
 #if FLOAT_PARSER
 static void handle_single(char *s){ handle_datadef(s,OPSZ_FLOAT|32); }
 static void handle_double(char *s){ handle_datadef(s,OPSZ_FLOAT|64); }
@@ -1399,6 +1412,7 @@ struct {
   "org",handle_org,
   "obj",handle_obj,
   "objend",handle_objend,
+  "hex",handle_hex,
   "cnop",handle_cnop,
   "even",handle_even,
   "align",handle_align,

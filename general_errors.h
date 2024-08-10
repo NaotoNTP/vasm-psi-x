@@ -89,3 +89,4 @@
   "string symbol <%s> redefined",ERROR,
   "symbol <%s> cannot be redefined as a string symbol",ERROR,
   "internal symbol <%s> not found",ERROR,						/* 90 */
+  "odd number of nybbles given",ERROR,

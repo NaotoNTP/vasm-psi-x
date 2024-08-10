@@ -328,6 +328,81 @@ dblock *parse_string(char **str,char delim,int width)
 }
 
 
+char *skip_hexstream(char *s,size_t *size)
+{
+  size_t n = 0;
+
+  while (isxdigit((unsigned char)*s)) {
+    n++; 
+    s++;
+  }
+  
+  *size = n;
+  return s;
+}
+
+
+char get_hex_byte(char *s) 
+{
+  char val = 0;
+  int i;
+  
+  for(i = 0; i < 2; i++){
+    val = val << 4;
+    
+    if(*s >= '0' && *s <= '9')
+      val += *s++ - '0';
+    else if (*s >= 'a' && *s <= 'f')
+      val += *s++ - 'a' + 10;
+    else if (*s >= 'A' && *s <= 'F')
+      val += *s++ - 'A' + 10;
+    else break;
+  }
+  return val;
+}
+
+
+char *read_hexstream(char *p,char *s)
+{
+  char c;
+
+  while (!ISEOL(s) && isxdigit((unsigned char)*s)) {
+    c = get_hex_byte(s);
+    s += 2;
+    if (p) {
+      setval(BIGENDIAN,p,1,(unsigned char)c);
+      p++;
+    }
+  }
+  return s;
+}
+
+
+dblock *parse_hexstream(char **str)
+{
+  size_t size;
+  dblock *db;
+  char *s = *str;
+
+  /* how many nybbles is the current hexstream? */
+  s = skip_hexstream(s,&size);
+  if (size & 1) {
+    general_error(91);  /* odd number of nybbles given */
+    *str = s;
+    return NULL;
+  }
+
+  db = new_dblock();
+  db->size = size / 2;
+  db->data = db->size ? mymalloc(db->size) : NULL;
+
+  /* now interpret the hexstream data into dblock */
+  s = read_hexstream((char *)db->data,*str);
+  *str = s;
+  return db;
+}
+
+
 char *parse_symbol(char **s)
 /* return ptr to a local/global symbol string in a static buffer, or NULL */
 {
