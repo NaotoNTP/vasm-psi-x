@@ -258,8 +258,20 @@ int m68k_data_operand(int bits)
   switch (bits) {
     case 8: return OP_D8;
     case 16: return OP_D16;
+    case 24: return OP_D24;
     case 32: return OP_D32;
+    case 40: return OP_D40;
+    case 48: return OP_D48;
+    case 56: return OP_D56;
     case 64: return OP_D64;
+    case 72: return OP_D72;
+    case 80: return OP_D80;
+    case 88: return OP_D88;
+    case 96: return OP_D96;
+    case 104: return OP_D104;
+    case 112: return OP_D112;
+    case 120: return OP_D120;
+    case 128: return OP_D128;
     case OPSZ_FLOAT|32: return OP_F32;
     case OPSZ_FLOAT|64: return OP_F64;
     case OPSZ_FLOAT|96: return OP_F96;
@@ -5477,7 +5489,12 @@ dblock *eval_data(operand *op,size_t bitsize,section *sec,taddr pc)
       break;
 
     default:
-      cpu_error(38,bitsize); /* data objects with x size are not supported */
+    /*cpu_error(38,bitsize); /* data objects with x size are not supported */
+	if (etype == HUG) {
+        if (typechk && !huge_chkrange(hval,bitsize))
+          cpu_error(39);  /* data out of range */
+        huge_to_mem(1,db->data,db->size,hval);
+      }
       break;
   }
 

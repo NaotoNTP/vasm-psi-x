@@ -642,7 +642,7 @@ static void handle_datasize(char *s)
 {
   int size = parse_constexpr(&s);
 
-  if ((size < 1) || (size > 256))
+  if ((size < 1) || (size > 16))
     syntax_error(25,size);  /* invalid data size value */
   else
     data_size = (size<<3);
@@ -1368,6 +1368,9 @@ struct {
   "ds.b",handle_spc8,
   "ds.w",handle_spc16,
   "ds.l",handle_spc32,
+
+  "data",handle_data,
+  "datasize",handle_datasize,
 #else
   "rs",handle_rs8,
   "rsb",handle_rs8,
@@ -1396,10 +1399,6 @@ struct {
   "org",handle_org,
   "obj",handle_obj,
   "objend",handle_objend,
-  /*
-  "data",handle_data,
-  "datasize",handle_datasize,
-  */
   "cnop",handle_cnop,
   "even",handle_even,
   "align",handle_align,

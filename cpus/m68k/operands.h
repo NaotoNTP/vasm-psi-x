@@ -63,7 +63,11 @@ enum {
   ((o)<<14)|((p)<<15))
 
 enum {
-  OP_D8=1,OP_D16,OP_D32,OP_D64,OP_F32,OP_F64,OP_F96,OP_FPD,
+  OP_D8=1,OP_D16,OP_D24,OP_D32,
+  OP_D40,OP_D48,OP_D56,OP_D64,
+  OP_D72,OP_D80,OP_D88,OP_D96,
+  OP_D104,OP_D112,OP_D120,OP_D128,
+  OP_F32,OP_F64,OP_F96,OP_FPD,
   D_,A_,B_,AI,IB,R_,RM,DD,CS,VR2,VB2,VDR2,VDR4,PA,AP,DP,
   F_,FF,FR,FPIAR,IM,IQ,QI,IR,BR,DB,AB,VA,M6,RL,FL,FS,
   AY,AM,MA,MI,FA,CF,MAQ,CFAM,CM,AL,DA,DN,DI,CFDA,CT,AC,AD,CFAD,
@@ -82,11 +86,47 @@ struct optype optypes[] = {
 /* OP_D16    16-bit data */
   _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
 
+/* OP_D24    24-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
 /* OP_D32    32-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D40    40-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D48    48-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D56    56-bit data */
   _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
 
 /* OP_D64    64-bit data */
   _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA|OTF_QUADIMM,0,0,
+
+/* OP_D72    72-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D80    80-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D88    88-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D96    96-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D104   104-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D112   112-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D120   120-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
+
+/* OP_D128   128-bit data */
+  _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA,0,0,
 
 /* OP_F32    32-bit data */
   _(0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0),OTF_DATA|OTF_FLTIMM,0,0,
