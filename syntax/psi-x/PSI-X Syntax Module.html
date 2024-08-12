@@ -215,6 +215,13 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>case &lt;exp1&gt;[,&lt;exp2&gt;...]</code></dt>
+<dd><p>      Conditional case directive. Conditionally assemble the following lines if one of the listed 
+	expressions matches the result of the expression given to the current switch statement. 
+	See also <code>switch</code>.
+</p>
+</dd>
+
 <dt><code>cnop &lt;offset&gt;,&lt;alignment&gt;</code></dt>
 <dd><p>      Insert as many padding bytes as are needed to reach an address divisible 
 	by <code>&lt;alignment&gt;</code>. Then, add <code>&lt;offset&gt;</code> padding bytes.
@@ -241,6 +248,12 @@ CPU- and output-module allow it):
 	Note that the base specified by the <code>radix</code> does not affect how the value of <code>&lt;size&gt;</code>
 	is parsed when no numeric base prefix/suffix is given; it will always be parsed as a decimal value when a prefix/suffix
 	is absent. Currently exclusive to M68K.
+</p>
+</dd>
+
+<dt><code>default</code></dt>
+<dd><p>      Built-in mnemonic alias for the <code>else</code> directive, intended for use within switch statement blocks. 
+	See also <code>switch</code>.
 </p>
 </dd>
 
@@ -318,7 +331,7 @@ CPU- and output-module allow it):
 </dd>
 
 <dt><code>endc/endif</code></dt>
-<dd><p>      Ends a section of conditional assembly.
+<dd><p>      Ends a block of conditional assembly.
 </p>
 </dd>
 
@@ -630,7 +643,7 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>public &lt;'on' or 'off&gt;</code></dt>
+<dt><code>public &lt;'on' or 'off'&gt;</code></dt>
 <dd><p>      Directive to automatically make declared symbols/labels externally visible. 
 	<code>public on</code> makes all new symbol/label declarations following it externally
 	visible, <code>public off</code> disables this behavior. Off by default. See also <code>xdef</code>.
@@ -792,6 +805,20 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>switch &lt;exp&gt;</code></dt>
+<dd><p>      Begins a switch statement block of conditional assembly. Unlike conditional blocks consisting of 
+	<code>if</code>, <code>else</code>, and <code>elseif</code>, a <code>switch</code> block conditionally 
+	assembles code based on whether or not an initial expression, given by <code>&lt;exp&gt;</code>, matches the 
+	value of any cases specified between the <code>switch</code> and <code>endc/endif</code> directive. Specific 
+	cases can be checked through the <code>case</code> directive; if <code>&lt;exp&gt;</code> matches the value
+	of an expression listed following <code>case</code>, all lines of code following the matched case will be 
+	assembled until another case sub-block is encountered. If <code>&lt;exp&gt;</code> matches multiple listed
+	cases within the switch statement, only the first matched case sub-block will be conditionally assembled; 
+	the rest will be ignored. <code>default</code> (or alternatively, <code>else</code>) functions as a special 
+	case which will be assembled if no previously listed case matched <code>&lt;exp&gt;</code>.
+</p>
+</dd>
+
 <dt><code>xdef &lt;symbol&gt;[,&lt;symbol&gt;...]</code></dt>
 <dd><p>      Flag <code>&lt;symbol&gt;</code> as externally visible, which means that
       <code>&lt;symbol&gt;</code> is visible to all modules in the linking process.
@@ -903,6 +930,8 @@ point3
 </li><li>- 1022: last %d bytes of string constant have been cut
 </li><li>- 1023: invalid numeric expansion
 </li><li>- 1024: enclosed macro argument missing "}"
+</li><li>- 1025: invalid "public" parameter (must be either "on" or "off")
+</li><li>- 1026: invalid data size value (%d bytes)
 
 </li></ul>
 
