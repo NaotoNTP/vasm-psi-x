@@ -975,6 +975,50 @@ static char *handle_iif(char *line_ptr)
   return line_ptr;
 }
 
+static void handle_switch(char *s)
+{
+  expr *condexp = parse_expr_tmplab(&s);
+  taddr val;
+
+  if (eval_expr(condexp,&val,NULL,0))
+    cond_switch(val);
+  else
+    general_error(30);  /* expression must be constant */
+  
+  free_expr(condexp);
+}
+
+static int eval_case(char *s)
+{
+  taddr val;
+  int b = 0;
+
+  s = skip(s);
+  for (;;) {
+    if (!eval_expr(parse_expr_tmplab(&s),&val,NULL,0)) {
+      general_error(30);  /* expression must be constant */
+      break;
+    }
+
+    if (cond_match(val)) {
+      b = 1;
+      break;
+    }
+
+    s = skip(s);
+    if (*s != ',')
+      break;
+    s = skip(s+1);
+  }
+
+  return b;
+}
+
+static void handle_case(char *s)
+{
+  cond_skipelse();
+}
+
 /*
  *	Multiline Comment Block Directives
  */
@@ -1430,6 +1474,10 @@ struct {
   "else",handle_else,
   "elseif",handle_elseif,
   "endif",handle_endif,
+
+  "switch",handle_switch,
+  "case",handle_case,
+  "default",handle_else,
   "endc",handle_endif,
 
   "ifb",handle_ifb,
@@ -1710,18 +1758,39 @@ void parse(void)
         if (*s == ':')
           s++;  /* skip double-colon */
       }
+
       /* advance to directive */
       idx = check_directive(&s);
       if (idx >= 0) {
-        if (!strncmp(directives[idx].name,"if",2))
-          cond_skipif();
-        else if (directives[idx].func == handle_else)
-          cond_else();
-        else if (directives[idx].func == handle_endif)
-          cond_endif();
-        else if (directives[idx].func == handle_elseif) {
-          s = skip(s);
-          cond_elseif(eval_ifexp(&s,1));
+        if (!cond_type()) {
+          if (!strncmp(directives[idx].name,"if",2))
+            cond_skipif();
+          else if (directives[idx].func == handle_switch)
+            cond_skipif();
+          else if (directives[idx].func == handle_case)
+            cond_skipelse();
+          else if (directives[idx].func == handle_else)
+            cond_else();
+          else if (directives[idx].func == handle_endif)
+            cond_endif();
+          else if (directives[idx].func == handle_elseif) {
+            s = skip(s);
+            cond_elseif(eval_ifexp(&s,1));
+          }
+        }
+        else {
+          if (!strncmp(directives[idx].name,"if",2))
+            cond_skipif();
+          else if (directives[idx].func == handle_switch)
+            cond_skipif();
+          else if (directives[idx].func == handle_case)
+            cond_elseif(eval_case(s));
+          else if (directives[idx].func == handle_else)
+            cond_else();
+          else if (directives[idx].func == handle_endif)
+            cond_endif();
+          else if (directives[idx].func == handle_elseif)
+            cond_skipelse();
         }
       }
       continue;

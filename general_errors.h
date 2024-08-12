@@ -61,10 +61,10 @@
   "cannot evaluate floating point expression",ERROR,            /* 60 */
   "imported symbol <%s> was not referenced",NOLINE|WARNING,
   "symbol <%s> already defined with %s scope",WARNING,
-  "unexpected \"else\" without \"if\"",ERROR,
-  "unexpected \"endif\" without \"if\"",ERROR,
+  "unexpected \"else\" outside of conditional block",ERROR,
+  "unexpected \"endc\" outside of conditional block",ERROR,
   "maximum if-nesting depth exceeded (%d levels)",FATAL|ERROR,  /* 65 */
-  "\"endif\" missing for conditional block started at %s line %d",ERROR,
+  "\"endc\" missing for conditional block started at %s line %d",ERROR,
   "repeatedly defined symbol <%s>",ERROR,
   "macro <%s> does not exist",ERROR,
   "register <%s> does not exist",ERROR,
