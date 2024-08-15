@@ -1142,10 +1142,12 @@ static void handle_endr(char *s)
 static void handle_while(char *s)
 {
   char *t = skip(s);
-  taddr val = parse_constexpr(&t);
+  s = t;
 
-  s = skip(s);
-  new_repeat(LOOP_WHILE,mystrdup(s),NULL,while_dirlist,endw_dirlist);
+  if (parse_constexpr(&t))
+    new_repeat(LOOP_WHILE,mystrdup(s),NULL,while_dirlist,endw_dirlist);
+  else
+    new_repeat(0,NULL,NULL,NULL,endw_dirlist);
 }
 
 static void handle_endw(char *s)
