@@ -90,3 +90,4 @@
   "symbol <%s> cannot be redefined as a string symbol",ERROR,
   "internal symbol <%s> not found",ERROR,						/* 90 */
   "odd number of nybbles given",ERROR,
+  "maximum number of loop iterations (%d) reached",ERROR,

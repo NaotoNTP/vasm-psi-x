@@ -85,6 +85,13 @@ int init_parse(void);
 #define REPT_IRP -100           /* repetition with a list of values */
 #define REPT_IRPC -101          /* repetition with a list of characters */
 
+#define LOOP_WHILE -102         /* while loop */
+#define LOOP_DOUNTIL -103       /* do-until loop */
+#define LOOP_FOR -104           /* for loop */
+
+/* maximum number of loop iterations (used to safe-guard against infinite loops that would soft-lock assembly) */
+#define MAXLOOPITERS 500000
+
 /* find_macarg_name(), copy_macro_param() for current REPT iterator value */
 #define IRPVAL 10000
 

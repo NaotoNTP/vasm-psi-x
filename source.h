@@ -34,6 +34,7 @@ struct source {
   int srcdebug;
   macro *macro;
   unsigned long repeat;
+  int isloop;
   char *irpname;
   struct macarg *irpvals;
   int cond_level;

@@ -31,6 +31,9 @@ static source *rept_defsrc;
 static int rept_defline;
 static char *rept_start,*rept_name,*rept_vals;
 
+static int is_loop;
+int maxloopiters = MAXLOOPITERS;
+
 static section *cur_struct;
 static section *struct_prevsect;
 
@@ -552,7 +555,8 @@ void new_repeat(int rcnt,char *name,char *vals,
     rept_start = cur_src->srcptr;
     rept_name = name ? mystrdup(name) : NULL;
     rept_vals = vals;
-    rept_cnt = rcnt;  /* also REPT_IRP or REPT_IRPC */
+    rept_cnt = rcnt;  /* also REPT_IRP, REPT_IRPC, or loop type */
+    is_loop = (rcnt <= LOOP_WHILE) ? 1 : 0;
 
     /* get start-line of repetition in the last real source text */
     if (cur_src->defsrc) {
@@ -908,13 +912,14 @@ static void start_repeat(char *rept_end)
   int i;
 
   reptdir_list = NULL;
-  if ((rept_cnt<0 && rept_cnt!=REPT_IRP && rept_cnt!=REPT_IRPC) ||
-      cur_src==NULL || strlen(cur_src->name) + 24 >= MAXPATHLEN)
+  if ((rept_cnt<0 && rept_cnt>REPT_IRP) || cur_src==NULL 
+      || strlen(cur_src->name) + 24 >= MAXPATHLEN)
     ierror(0);
 
   if (rept_cnt != 0) {
     sprintf(buf,"REPEAT:%s:line %d",rept_defsrc->name,rept_defline);
     src = new_source(buf,NULL,rept_start,rept_end-rept_start);
+    src->isloop = is_loop;
     src->irpname = rept_name;
     src->irpvals = NULL;
     src->defsrc = rept_defsrc;
@@ -965,6 +970,10 @@ static void start_repeat(char *rept_end)
           }
           while (!ISEOL(p));
         }
+        break;
+
+      case LOOP_WHILE:
+        src->repeat = maxloopiters;
         break;
 
       default:  /* iterate rept_cnt times */
@@ -1102,12 +1111,19 @@ char *read_next_line(void)
   int nparam,len;
   int skip_listing = 0;
   char *rept_end = NULL;
+  taddr cond_eval = 1;
+
+  /* if currently in a loop, evaluate the condition expression */
+  if (cur_src->isloop) {
+    char *cond = cur_src->irpname;
+    cond_eval = parse_constexpr(&cond);
+  }
 
   /* check if end of source is reached */
   for (;;) {
     srcend = cur_src->text + cur_src->size;
     if (cur_src->srcptr >= srcend || *(cur_src->srcptr) == '\0') {
-      if (--cur_src->repeat > 0) {
+      if ((--cur_src->repeat > 0) && (cond_eval != 0)) {
         struct macarg *irpval;
 
         cur_src->srcptr = cur_src->text;  /* back to start */
@@ -1122,6 +1138,9 @@ char *read_next_line(void)
 #endif
       }
       else {
+        if ((cur_src->isloop) && (cond_eval != 0)) {
+          general_error(92,maxloopiters);  /* maximum loop iterations reached */
+        }
         if (cur_src->macro != NULL) {
           if (--cur_src->macro->recursions < 0)
             ierror(0);

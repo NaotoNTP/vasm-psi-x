@@ -54,6 +54,12 @@ static struct namelen endr_dirlist[] = {
 static struct namelen comend_dirlist[] = {
   { 6,"comend" }, { 0,0 }
 };
+static struct namelen while_dirlist[] = {
+  { 5,"while" }, { 0,0 }
+};
+static struct namelen endw_dirlist[] = {
+  { 4,"endw" }, { 0,0 }
+};
 
 static int parse_end = 0;
 
@@ -1097,13 +1103,6 @@ static void handle_endmodule(char *s)
 /*
  *	Repetition Directives
  */
-static void handle_rept(char *s)
-{
-  int cnt = (int)parse_constexpr(&s);
-
-  new_repeat(cnt<0?0:cnt,NULL,NULL,rept_dirlist,endr_dirlist);
-}
-
 static void do_irp(int type,char *s)
 {
   strbuf *name;
@@ -1128,9 +1127,30 @@ static void handle_irpc(char *s)
   do_irp(REPT_IRPC,s);
 }
 
+static void handle_rept(char *s)
+{
+  int cnt = (int)parse_constexpr(&s);
+
+  new_repeat(cnt<0?0:cnt,NULL,NULL,rept_dirlist,endr_dirlist);
+}
+
 static void handle_endr(char *s)
 {
   syntax_error(12,"endr","rept");  /* unexpected endr without rept */
+}
+
+static void handle_while(char *s)
+{
+  char *t = skip(s);
+  taddr val = parse_constexpr(&t);
+
+  s = skip(s);
+  new_repeat(LOOP_WHILE,mystrdup(s),NULL,while_dirlist,endw_dirlist);
+}
+
+static void handle_endw(char *s)
+{
+  syntax_error(12,"endw","while");  /* unexpected endw without while */
 }
 
 /*
@@ -1507,6 +1527,8 @@ struct {
   "irp",handle_irp,
   "irpc",handle_irpc,
   "endr",handle_endr,
+  "while",handle_while,
+  "endw",handle_endw,
 
   "purge",handle_purge,
   "shift",handle_shift,
