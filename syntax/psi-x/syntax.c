@@ -45,6 +45,7 @@ static struct namelen macro_dirlist[] = {
 static struct namelen endm_dirlist[] = {
   { 4,"endm" }, { 0,0 }
 };
+
 static struct namelen rept_dirlist[] = {
   { 4,"rept" }, { 3,"irp" }, { 4,"irpc" }, { 0,0 }
 };
@@ -54,6 +55,7 @@ static struct namelen endr_dirlist[] = {
 static struct namelen comend_dirlist[] = {
   { 6,"comend" }, { 0,0 }
 };
+
 static struct namelen while_dirlist[] = {
   { 5,"while" }, { 0,0 }
 };
@@ -1047,12 +1049,6 @@ static void handle_comend(char *s)
 /*
  *	Struct Directives
  */
-static void handle_struct(char *s)
-{
-  syntax_error(10);  /* identifier expected */
-  eol(s);
-}
-
 static void handle_endstruct(char *s)
 {
   section *structsec = current_section;
@@ -1450,10 +1446,28 @@ static void handle_end(char *s)
   parse_end = 1;
 }
 
+/*
+ *	Directives That Require a Leading Identifier
+ */
+static void handle_absentid(char *s)
+{
+  syntax_error(10);  /* identifier expected */
+  eol(s);
+}
+
 struct {
   const char *name;
   void (*func)(char *);
 } directives[] = {
+  "=",handle_absentid,
+  "==",handle_absentid,
+  "alias",handle_absentid,
+  "equ",handle_absentid,
+  "equs",handle_absentid,
+  "macro",handle_absentid,
+  "set",handle_absentid,
+  "struct",handle_absentid,
+
   "rsset",handle_rsset,	
   "rsreset",handle_rsreset,
   "rseven",handle_rseven,
@@ -1542,14 +1556,11 @@ struct {
   "iflt",handle_iflt,
   "ifle",handle_ifle,
 
-  "comment",handle_comment,
-  "comend",handle_comend,
-
-  "struct",handle_struct,
-  "ends",handle_endstruct,
-
   "module",handle_module,
   "modend",handle_endmodule,
+  "comment",handle_comment,
+  "comend",handle_comend,
+  "ends",handle_endstruct,
 
   "rept",handle_rept,
   "irp",handle_irp,
@@ -2171,37 +2182,52 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       else nc = -1;
     }
     else if (*s == '#') {
-      /* \# : insert number of parameters */
-      if (dlen > 3) {
-        nc = sprintf(d,"%d",src->num_params);
-        s++;
-      }
-      else
-        nc = -1;
-    }
-    else if (*s == '<') {
-      /* \<symbol> : insert absolute unsigned symbol value */
-      const char *fmt;
+      /* \# : insert absolute unsigned symbol value (decimal) */
       char *name;
       symbol *sym;
       taddr val;
-
-      if (*(++s) == '$') {
-        fmt = "%lX";
-        s++;
-      }
-      else
-        fmt = "%lu";
+      s++;
+      
       if (name = parse_symbol(&s)) {
         if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
           if (eval_expr(sym->expr,&val,NULL,0)) {
             if (dlen > 9)
-              nc = sprintf(d,fmt,(unsigned long)(uint32_t)val);
+              nc = sprintf(d,"%lu",(unsigned long)(uint32_t)val);
             else
               nc = -1;
           }
+          if (*s++!='\\')
+            s--;
         }
-        if (*s++!='>' || nc<=0) {
+        if (nc <= 0) {
+          syntax_error(22);  /* invalid numeric expansion */
+          return 0;
+        }
+      }
+      else {
+        syntax_error(10);  /* identifier expected */
+        return 0;
+      }
+    }
+    else if (*s == '$') {
+      /* \$ : insert absolute unsigned symbol value (hex) */
+      char *name;
+      symbol *sym;
+      taddr val;
+      s++;
+      
+      if (name = parse_symbol(&s)) {
+        if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
+          if (eval_expr(sym->expr,&val,NULL,0)) {
+            if (dlen > 9)
+              nc = sprintf(d,"%lx",(unsigned long)(uint32_t)val);
+            else
+              nc = -1;
+          }
+          if (*s++!='\\')
+            s--;
+        }
+        if (nc <= 0) {
           syntax_error(22);  /* invalid numeric expansion */
           return 0;
         }
@@ -2212,9 +2238,9 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       }
     }
     else if (*s=='?' && dlen>=1) {
-	  /* \?n : check if numeric parameter is defined */
-	  if (isdigit((unsigned char)*(s+1)) && dlen > 3) {
-	    if ((nc = macro_arg_defined(src,s+1,s+2,d,0)) >= 0)
+      /* \?n : check if numeric parameter is defined */
+      if (isdigit((unsigned char)*(s+1)) && dlen > 3) {
+        if ((nc = macro_arg_defined(src,s+1,s+2,d,0)) >= 0)
           s += 2;
       }
       else if ((end = skip_identifier(s+1)) != NULL) {
@@ -2222,10 +2248,10 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         if ((nc = macro_arg_defined(src,s+1,end,d,1)) >= 0)
           s = end;
       }
-	  else {
+      else {
         nc = -1;
-	  }
-	}
+      }
+    }
     else if (isdigit((unsigned char)*s)) {
       /* \0..\9 : insert macro parameter 0..9 */
       if (*s == '0')
