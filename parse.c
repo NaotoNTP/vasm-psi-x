@@ -1112,19 +1112,20 @@ char *read_next_line(void)
   int nparam,len;
   int skip_listing = 0;
   char *rept_end = NULL;
-  taddr cond_eval = 1;
-
-  /* if currently in a loop, evaluate the condition expression */
-  if (cur_src->isloop) {
-    char *cond = cur_src->irpname;
-    cond_eval = (cond != NULL) ? parse_constexpr(&cond) : 0;
-    cond_eval = (cur_src->isloop != LOOP_DOUNTIL) ? cond_eval : !cond_eval;
-  }
 
   /* check if end of source is reached */
   for (;;) {
     srcend = cur_src->text + cur_src->size;
     if (cur_src->srcptr >= srcend || *(cur_src->srcptr) == '\0') {
+      taddr cond_eval = 1;
+
+      /* if currently in a loop, evaluate the condition expression */
+      if (cur_src->isloop) {
+        char *cond = cur_src->irpname;
+        cond_eval = (cond != NULL) ? parse_constexpr(&cond) : 0;
+        cond_eval = (cur_src->isloop == LOOP_DOUNTIL) ? !cond_eval : cond_eval;
+      }
+
       if ((--cur_src->repeat > 0) && cond_eval) {
         struct macarg *irpval;
 
@@ -1209,9 +1210,7 @@ char *read_next_line(void)
               break;
             }
 
-            if (parse_constexpr(&t)) {
-              rept_name = mystrdup(skip(s+dir->len));
-            }
+            rept_name = mystrdup(skip(s+dir->len));
           }
           rept_end = s;
           enddir_list = NULL;
