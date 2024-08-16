@@ -60,6 +60,12 @@ static struct namelen while_dirlist[] = {
 static struct namelen endw_dirlist[] = {
   { 4,"endw" }, { 0,0 }
 };
+static struct namelen do_dirlist[] = {
+  { 2,"do" }, { 0,0 }
+};
+static struct namelen until_dirlist[] = {
+  { 5,"until" }, { 0,0 }
+};
 
 static int parse_end = 0;
 
@@ -1139,10 +1145,19 @@ static void handle_endr(char *s)
   syntax_error(12,"endr","rept");  /* unexpected endr without rept */
 }
 
+/*
+ *	Conditional Loop Directives
+ */
 static void handle_while(char *s)
 {
   char *t = skip(s);
   s = t;
+
+  if (ISEOL(t)) {
+    general_error(93);
+    new_repeat(0,NULL,NULL,NULL,endw_dirlist);
+    return;
+  }
 
   if (parse_constexpr(&t))
     new_repeat(LOOP_WHILE,mystrdup(s),NULL,while_dirlist,endw_dirlist);
@@ -1153,6 +1168,17 @@ static void handle_while(char *s)
 static void handle_endw(char *s)
 {
   syntax_error(12,"endw","while");  /* unexpected endw without while */
+}
+
+static void handle_do(char *s)
+{
+  new_repeat(LOOP_DOUNTIL,NULL,NULL,do_dirlist,until_dirlist);
+  eol(s);
+}
+
+static void handle_until(char *s)
+{
+  syntax_error(12,"until","do");  /* unexpected until without do */
 }
 
 /*
@@ -1529,8 +1555,11 @@ struct {
   "irp",handle_irp,
   "irpc",handle_irpc,
   "endr",handle_endr,
+  
   "while",handle_while,
   "endw",handle_endw,
+  "do",handle_do,
+  "until",handle_until,
 
   "purge",handle_purge,
   "shift",handle_shift,

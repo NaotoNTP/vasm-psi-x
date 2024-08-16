@@ -45,6 +45,7 @@ struct namelen {
 extern int esc_sequences,nocase_macros;
 extern int maxmacparams,maxmacrecurs;
 extern int msource_disable;
+extern int maxloopiters;
 
 /* functions */
 char *escape(char *,char *);
@@ -86,11 +87,12 @@ int init_parse(void);
 #define REPT_IRPC -101          /* repetition with a list of characters */
 
 #define LOOP_WHILE -102         /* while loop */
-#define LOOP_DOUNTIL -103       /* do-until loop */
+#define LOOP_DOUNTIL -103      	/* do-until loop */
 #define LOOP_FOR -104           /* for loop */
 
 /* maximum number of loop iterations (used to safe-guard against infinite loops that would soft-lock assembly) */
-#define MAXLOOPITERS 500000
+#define MAX_LOOP_ITERS 10000
+#define INFINITE_ITERS -1
 
 /* find_macarg_name(), copy_macro_param() for current REPT iterator value */
 #define IRPVAL 10000

@@ -1242,6 +1242,10 @@ int main(int argc,char **argv)
       sscanf(argv[i]+14,"%i",&maxmacrecurs);
       continue;
     }
+	if(!strncmp("-maxloopiters=",argv[i],14)){
+      sscanf(argv[i]+14,"%i",&maxloopiters);
+      continue;
+    }
     if(!strncmp("-maxpasses=",argv[i],11)){
       sscanf(argv[i]+11,"%i",&maxpasses);
       continue;

@@ -32,7 +32,7 @@ static int rept_defline;
 static char *rept_start,*rept_name,*rept_vals;
 
 static int is_loop;
-int maxloopiters = MAXLOOPITERS;
+int maxloopiters = MAX_LOOP_ITERS;
 
 static section *cur_struct;
 static section *struct_prevsect;
@@ -556,7 +556,7 @@ void new_repeat(int rcnt,char *name,char *vals,
     rept_name = name ? mystrdup(name) : NULL;
     rept_vals = vals;
     rept_cnt = rcnt;  /* also REPT_IRP, REPT_IRPC, or loop type */
-    is_loop = (rcnt <= LOOP_WHILE) ? 1 : 0;
+    is_loop = (rcnt <= LOOP_WHILE) ? rcnt : 0;
 
     /* get start-line of repetition in the last real source text */
     if (cur_src->defsrc) {
@@ -972,8 +972,9 @@ static void start_repeat(char *rept_end)
         }
         break;
 
+      case LOOP_DOUNTIL:
       case LOOP_WHILE:
-        src->repeat = maxloopiters;
+        src->repeat = maxloopiters ? maxloopiters : INFINITE_ITERS;
         break;
 
       default:  /* iterate rept_cnt times */
@@ -1116,14 +1117,15 @@ char *read_next_line(void)
   /* if currently in a loop, evaluate the condition expression */
   if (cur_src->isloop) {
     char *cond = cur_src->irpname;
-    cond_eval = parse_constexpr(&cond);
+    cond_eval = (cond != NULL) ? parse_constexpr(&cond) : 0;
+    cond_eval = (cur_src->isloop != LOOP_DOUNTIL) ? cond_eval : !cond_eval;
   }
 
   /* check if end of source is reached */
   for (;;) {
     srcend = cur_src->text + cur_src->size;
     if (cur_src->srcptr >= srcend || *(cur_src->srcptr) == '\0') {
-      if ((--cur_src->repeat > 0) && (cond_eval != 0)) {
+      if ((--cur_src->repeat > 0) && cond_eval) {
         struct macarg *irpval;
 
         cur_src->srcptr = cur_src->text;  /* back to start */
@@ -1138,7 +1140,7 @@ char *read_next_line(void)
 #endif
       }
       else {
-        if ((cur_src->isloop) && (cond_eval != 0)) {
+        if (cur_src->isloop && cond_eval) {
           general_error(92,maxloopiters);  /* maximum loop iterations reached */
         }
         if (cur_src->macro != NULL) {
@@ -1197,6 +1199,20 @@ char *read_next_line(void)
           break;
         }
         else if (--rept_nest == 0) {
+          if (is_loop == LOOP_DOUNTIL) {
+            char *t = skip(s+dir->len);
+
+            if (ISEOL(t)) {
+              general_error(93);
+              rept_end = s;
+              enddir_list = NULL;
+              break;
+            }
+
+            if (parse_constexpr(&t)) {
+              rept_name = mystrdup(skip(s+dir->len));
+            }
+          }
           rept_end = s;
           enddir_list = NULL;
           break;
