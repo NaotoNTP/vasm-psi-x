@@ -1283,11 +1283,11 @@ char *read_next_line(void)
       nc = 0;
 
     if (nc == 0) {
-      nc = expand_strsym(cur_src,&s,d,len);  /* try string symbol expansion */
+      nc = expand_ctrlchars(cur_src,&s,d,len);  /* try syntax-specific control character expansion */
     }
 
     if (nc > 0) {
-      /* expanded macro arguments or string symbols */
+      /* expanded macro arguments or control characters */
       len -= nc;
       d += nc;
     }

@@ -1772,7 +1772,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
 }
 
 
-int expand_strsym(source *src,char **line,char *d,int dlen)
+int expand_ctrlchars(source *src,char **line,char *d,int dlen)
 {
   /* no support for string symbols*/
   return 0;

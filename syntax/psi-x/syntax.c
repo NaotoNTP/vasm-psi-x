@@ -2155,31 +2155,23 @@ int expand_macro(source *src,char **line,char *d,int dlen)
   char *s = *line;
   char *end;
 
-  if (*s++ == '\\') {
+  if (*s == '\\') {
     /* possible macro expansion detected */
+    s++;
 
-    if (*s == '\\') {
-      if (dlen >= 1) {
-        *d++ = *s++;
-        if (esc_sequences) {
-          if (dlen >= 2) {
-            *d++ = '\\';  /* make it a double \ again */
-            nc = 2;
-          }
-          else nc = -1;
-        }
-        else nc = 1;
-      }
-      else nc = -1;
-    }
+    /* skip secondary leading '\' if present */
+    if (*s=='\\')
+      s++;
 
-    else if (*s == '@') {
+    if (*s == '@') {
       /* \@: insert a unique id */
       if (dlen > 7) {
-        nc = sprintf(d,"_%06lu",src->id);
+        nc += sprintf(d,"_%06lu",src->id);
         s++;
       }
-      else nc = -1;
+      else {
+        nc = -1;
+      }
     }
     else if (*s == '#') {
       /* \# : insert absolute unsigned symbol value (decimal) */
@@ -2192,12 +2184,10 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
           if (eval_expr(sym->expr,&val,NULL,0)) {
             if (dlen > 9)
-              nc = sprintf(d,"%lu",(unsigned long)(uint32_t)val);
+              nc += sprintf(d,"%lu",(unsigned long)(uint32_t)val);
             else
               nc = -1;
           }
-          if (*s++!='\\')
-            s--;
         }
         if (nc <= 0) {
           syntax_error(22);  /* invalid numeric expansion */
@@ -2224,8 +2214,6 @@ int expand_macro(source *src,char **line,char *d,int dlen)
             else
               nc = -1;
           }
-          if (*s++!='\\')
-            s--;
         }
         if (nc <= 0) {
           syntax_error(22);  /* invalid numeric expansion */
@@ -2268,17 +2256,33 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       }
     }
 
+    /* skip terminating '\' if present */
+    if (*s=='\\')
+      s++;
+
     if (nc >= dlen)
       nc = -1;
     else if (nc >= 0)
       *line = s;  /* update line pointer when expansion took place */
   }
+  else if ((end = skip_identifier(s)) != NULL) {
+  /* possible named macro argument expansion detected (without leading '\') */
+    if ((n = find_macarg_name(src,s,end-s)) >= 0) {
+      /* argname: insert named macro parameter n */
+      nc = copy_macro_param(src,(n+shift->expr->c.val),d,dlen);
+      s = end;
+    }
+
+    if (nc >= dlen)
+      nc = -1;
+    else if (nc >= 0)
+     *line = s;  /* update line pointer when expansion took place */
+  }
 
   return nc;  /* number of chars written to line buffer, -1: out of space */
 }
 
-
-int expand_strsym(source *src,char **line,char *d,int dlen)
+int expand_ctrlchars(source *src,char **line,char *d,int dlen)
 {
   int nc = 0;
   char *s = *line;
@@ -2332,7 +2336,7 @@ int init_syntax()
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
-  esc_sequences = 1;
+  esc_sequences = 0;
   
   /*
    * Date & Time Constant Definitions 
