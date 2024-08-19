@@ -2162,7 +2162,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     if (*s == '@') {
       /* \@: insert a unique id */
       if (dlen > 7) {
-        nc += sprintf(d,"_%06lu",src->id);
+        nc += sprintf(d,"_%lu",src->id);
         s++;
       }
       else {
@@ -2303,16 +2303,11 @@ int expand_ctrlchars(source *src,char **line,char *d,int dlen)
     s++;
 
     if (name = parse_symbol(&s)) {
-      if ((sym = find_symbol(name)) && sym->type == STRSYM) {
+      if ((*s == '}') && (sym = find_symbol(name)) && (sym->type == STRSYM)) {
         nc = sprintf(d,sym->text);
+        s++;
       }
     }
-
-    /* check for terminating '}' */
-    if (*s == '}')
-      s++;
-    else
-      nc = 0;
 
     if (nc >= dlen)
       nc = -1;
