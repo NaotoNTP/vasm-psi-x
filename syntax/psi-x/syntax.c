@@ -120,7 +120,7 @@ char *chkidend(char *start,char *end)
     char c = tolower((unsigned char)*(end-1));
 
     if (c=='b' || c=='w' || c=='l')
-      return end - 2;	/* .b/.w/.l extension is not part of identifier */
+      return end - 2;  /* .b/.w/.l extension is not part of identifier */
   }
   return end;
 }
@@ -374,7 +374,7 @@ strbuf *get_local_label(int n,char **start)
 }
 
 /*
- *	Reserve Symbol Directives
+ *  Reserve Symbol Directives
  */
 static void handle_rsreset(char *s)
 {
@@ -528,7 +528,7 @@ static void handle_rs32(char *s)
 }
 
 /*
- *	Declare Constant Directives
+ *  Declare Constant Directives
  */
 static void handle_datadef(char *s,int size)
 {
@@ -585,7 +585,7 @@ static void handle_d32(char *s)
 }
 
 /*
- *	Define Storage Directives
+ *  Define Storage Directives
  */
 static atom *do_space(int size,expr *cnt,expr *fill)
 {
@@ -619,7 +619,7 @@ static void handle_spc32(char *s)
 }
 
 /*
- *	Declare Constant Block Directives
+ *  Declare Constant Block Directives
  */
 static void handle_block(char *s,int size)
 {
@@ -650,7 +650,7 @@ static void handle_blk32(char *s)
 }
 
 /*
- *	Additional Data Directives
+ *  Additional Data Directives
  */
 static void handle_datasize(char *s)
 {
@@ -692,7 +692,7 @@ static void handle_double(char *s){ handle_datadef(s,OPSZ_FLOAT|64); }
 #endif
 
 /*
- *	Program Control Directives
+ *  Program Control Directives
  */
 static void handle_org(char *s)
 {
@@ -716,7 +716,7 @@ static void handle_objend(char *s)
 }
 
 /*
- *	Padding and Alignment Directives
+ *  Padding and Alignment Directives
  */
 static void do_alignment(taddr align,expr *offset,size_t pad,expr *fill)
 {
@@ -762,7 +762,7 @@ static void handle_align(char *s)
 }
 
 /*
- *	Include File Directives
+ *  Include File Directives
  */
 static void handle_incdir(char *s)
 {
@@ -808,7 +808,7 @@ static void handle_incbin(char *s)
 }
 
 /*
- *	Conditional Directives
+ *  Conditional Directives
  */
 static void ifdef(char *s,int b)
 {
@@ -1034,7 +1034,7 @@ static void handle_case(char *s)
 }
 
 /*
- *	Multiline Comment Block Directives
+ *  Multiline Comment Block Directives
  */
 static void handle_comment(char *s)
 {
@@ -1047,7 +1047,7 @@ static void handle_comend(char *s)
 }
 
 /*
- *	Struct Directives
+ *  Struct Directives
  */
 static void handle_endstruct(char *s)
 {
@@ -1068,7 +1068,7 @@ static void handle_endstruct(char *s)
 }
 
 /*
- *	Module Directives
+ *  Module Directives
  */
 static void handle_module(char *s)
 {
@@ -1103,7 +1103,7 @@ static void handle_endmodule(char *s)
 }
 
 /*
- *	Repetition Directives
+ *  Repetition Directives
  */
 static void do_irp(int type,char *s)
 {
@@ -1142,7 +1142,7 @@ static void handle_endr(char *s)
 }
 
 /*
- *	Conditional Loop Directives
+ *  Conditional Loop Directives
  */
 static void handle_while(char *s)
 {
@@ -1178,7 +1178,7 @@ static void handle_until(char *s)
 }
 
 /*
- *	Macro Directives
+ *  Macro Directives
  */
 static void handle_purge(char *s)
 {
@@ -1227,7 +1227,7 @@ static void handle_endm(char *s)
 }
 
 /*
- *	Section Directives
+ *  Section Directives
  */
 static void handle_section(char *s)
 {
@@ -1276,7 +1276,7 @@ static void handle_popsect(char *s)
 }
 
 /*
- *	Linker-Related Directives
+ *  Linker-Related Directives
  */
 static void do_bind(char *s,unsigned bind)
 {
@@ -1297,11 +1297,11 @@ static void do_bind(char *s,unsigned bind)
       sym->flags |= bind;
       if ((bind & XREF)!=0 && sym->type!=IMPORT)
         general_error(85,sym->name);  /* xref must not be defined already */
-	}
-	s = skip(s);
-	if(*s != ',')
+  }
+  s = skip(s);
+  if(*s != ',')
       break;
-	s = skip(s + 1);
+  s = skip(s + 1);
   }
   eol(s);
 }
@@ -1354,7 +1354,7 @@ static void handle_public(char *s)
 }
 
 /*
- *	Miscellaneous Directives
+ *  Miscellaneous Directives
  */
 static void handle_radix(char *s)
 {
@@ -1398,25 +1398,25 @@ static void handle_inform(char *s)
   if (txt = parse_name(0,&s)) {
     switch (severity) {
     
-	  case 0:	/* message */
-	    syntax_error(16,txt->str);  
-	    break;
+    case 0:  /* message */
+      syntax_error(16,txt->str);  
+      break;
 
-    case 1:	/* warning */
-	    syntax_error(17,txt->str);
-	    break;
+    case 1:  /* warning */
+      syntax_error(17,txt->str);
+      break;
 
-    case 2:	/* error */
-	    syntax_error(18,txt->str);
-	    break;
+    case 2:  /* error */
+      syntax_error(18,txt->str);
+      break;
 
-    case 3:	/* fatal error */
-  	  syntax_error(19,txt->str);
+    case 3:  /* fatal error */
+      syntax_error(19,txt->str);
       parse_end = 1;
-	    break;
+      break;
   
     default: /* invalid message severity */
-	    syntax_error(15);
+      syntax_error(15);
       break;
     }
   }
@@ -1447,7 +1447,7 @@ static void handle_end(char *s)
 }
 
 /*
- *	Directives That Require a Leading Identifier
+ *  Directives That Require a Leading Identifier
  */
 static void handle_absentid(char *s)
 {
@@ -1468,7 +1468,7 @@ struct {
   "set",handle_absentid,
   "struct",handle_absentid,
 
-  "rsset",handle_rsset,	
+  "rsset",handle_rsset,  
   "rsreset",handle_rsreset,
   "rseven",handle_rseven,
 
@@ -1808,7 +1808,7 @@ void parse(void)
   instruction *ip;
 
   while (line = read_next_line()) {
-  	if (parse_end)
+    if (parse_end)
       continue;
 
     s = line;
@@ -1883,26 +1883,26 @@ void parse(void)
         label = new_equate(labname,parse_expr_tmplab(&s));
         label->flags |= symflags;
       }
-  	  else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
+      else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
         /* set allows redefinitions */
         s = skip(s+3);
         label = new_abs(labname,parse_expr_tmplab(&s));
       } 
-  	  else if (*s=='=') {
+      else if (*s=='=') {
         s++;
-	    	if (*s=='=') {
-			  /* '==' is shorthand for equ */
-	     		s++;
-		    	s = skip(s);
-			    label = new_equate(labname,parse_expr_tmplab(&s));
+        if (*s=='=') {
+          /* '==' is shorthand for equ */
+          s++;
+          s = skip(s);
+          label = new_equate(labname,parse_expr_tmplab(&s));
           label->flags |= symflags;
-		    } 
-		    else {
-			    /* '=' is shorthand for set */
-			    s = skip(s);
-        	label = new_abs(labname,parse_expr_tmplab(&s));
-	    	}
-	    }
+        } 
+      else {
+        /* '=' is shorthand for set */
+        s = skip(s);
+        label = new_abs(labname,parse_expr_tmplab(&s));
+        }
+      }
       else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
         s = skip(s+4);
         new_strsym(labname,parse_name(0,&s));
@@ -1944,7 +1944,7 @@ void parse(void)
         new_macro(buf->str,macro_dirlist,endm_dirlist,params);
         continue;
       }
-	    else if (!strnicmp(s,"struct",6) &&
+      else if (!strnicmp(s,"struct",6) &&
                (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
                 || *(s+6)==commentchar)) {
         strbuf *buf;
@@ -1976,7 +1976,7 @@ void parse(void)
     }
 
     /* check for directives */
-	  s = skip(s);
+    s = skip(s);
     if (*s==commentchar)
       continue;
 
@@ -1988,8 +1988,8 @@ void parse(void)
 
     if (handle_directive(s))
       continue;
-	
-	  s = skip(s);
+  
+    s = skip(s);
     if (ISEOL(s))
       continue;
 
@@ -2102,7 +2102,7 @@ char *parse_macro_arg(struct macro *m,char *s,
       }
     }
     syntax_error(23); /* enclosed macro argument missing } */
-	  return NULL;
+    return NULL;
   }
   s = skip_operand(s);
   param->len = s - param->name;
@@ -2119,19 +2119,19 @@ static int macro_arg_defined(source *src,char *argstart,char *argend,char *d,int
     n = find_macarg_name(src,argstart,argend-argstart);
   }
   else {
-  	n = *(argstart) - '0';
+    n = *(argstart) - '0';
 
-  	if (n == 0) {
+    if (n == 0) {
 #if MAX_QUALIFIERS > 0
       *d++ = ((src->qual_len[0] > 0) ? '1' : '0');
 #else
       *d++ = '0';
 #endif
-       return 1;		
-	  } 
-	  else {
-	    n--;
-	  }
+       return 1;    
+    } 
+    else {
+      n--;
+    }
   }
 
   n += shift->expr->c.val;
@@ -2159,10 +2159,6 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     /* possible macro expansion detected */
     s++;
 
-    /* skip secondary leading '\' if present */
-    if (*s=='\\')
-      s++;
-
     if (*s == '@') {
       /* \@: insert a unique id */
       if (dlen > 7) {
@@ -2171,58 +2167,6 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       }
       else {
         nc = -1;
-      }
-    }
-    else if (*s == '#') {
-      /* \# : insert absolute unsigned symbol value (decimal) */
-      char *name;
-      symbol *sym;
-      taddr val;
-      s++;
-      
-      if (name = parse_symbol(&s)) {
-        if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
-          if (eval_expr(sym->expr,&val,NULL,0)) {
-            if (dlen > 9)
-              nc += sprintf(d,"%lu",(unsigned long)(uint32_t)val);
-            else
-              nc = -1;
-          }
-        }
-        if (nc <= 0) {
-          syntax_error(22);  /* invalid numeric expansion */
-          return 0;
-        }
-      }
-      else {
-        syntax_error(10);  /* identifier expected */
-        return 0;
-      }
-    }
-    else if (*s == '$') {
-      /* \$ : insert absolute unsigned symbol value (hex) */
-      char *name;
-      symbol *sym;
-      taddr val;
-      s++;
-      
-      if (name = parse_symbol(&s)) {
-        if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
-          if (eval_expr(sym->expr,&val,NULL,0)) {
-            if (dlen > 9)
-              nc = sprintf(d,"%lx",(unsigned long)(uint32_t)val);
-            else
-              nc = -1;
-          }
-        }
-        if (nc <= 0) {
-          syntax_error(22);  /* invalid numeric expansion */
-          return 0;
-        }
-      }
-      else {
-        syntax_error(10);  /* identifier expected */
-        return 0;
       }
     }
     else if (*s=='?' && dlen>=1) {
@@ -2257,7 +2201,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     }
 
     /* skip terminating '\' if present */
-    if (*s=='\\')
+    if (*s == '\\')
       s++;
 
     if (nc >= dlen)
@@ -2275,7 +2219,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
 
     if (nc >= dlen)
       nc = -1;
-    else if (nc >= 0)
+    else if (nc > 0)
      *line = s;  /* update line pointer when expansion took place */
   }
 
@@ -2284,21 +2228,95 @@ int expand_macro(source *src,char **line,char *d,int dlen)
 
 int expand_ctrlchars(source *src,char **line,char *d,int dlen)
 {
+  symbol *sym;
   int nc = 0;
+  int n;
   char *s = *line;
-  char *end = (s+1);
   char *name;
-  strsym *ssym;
 
-  if (*s++ == '{' && (name = parse_symbol(&s)) && *(end = skip_identifier(end)) == '}') {
-	  if (ssym = find_strsym(name,strlen(name))) {
-      nc = sprintf(d,ssym->text);
-      *s++;
+  if (*s == '\\') {
+    /* possible control character or symbolic expansion detected */
+    s++;
+
+    /* \^<ctrl_char>: insert control character according to carrot notation */
+    /*
+    if (*s == '^') {
+      char ctrl = 0x20;
+      s++;
+
+      if ((*s >= '@' && *s <= 'z') && *s != '`')
+        ctrl = *s & 0x1F;
+      else if (*s == '?')
+        ctrl = 0x7F;
+
+      if (ctrl != 0x20)
+        nc = sprintf(d,"%c",ctrl);
+      else
+        nc = 0;
     }
-    
-	  if (nc >= dlen)
+    */
+    if (*s == '#' || *s == '$') {
+      /* \# or \$ : insert absolute unsigned symbol value (decimal or hex) */
+      const char *fmt;
+      taddr val;
+
+      fmt = (*s == '$') ? "%lX" : "%lu";
+      s++;
+      
+      if (name = parse_symbol(&s)) {
+        if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
+          if (eval_expr(sym->expr,&val,NULL,0)) {
+            if (dlen > 9)
+              nc = sprintf(d,fmt,(unsigned long)(uint32_t)val);
+            else
+              nc = -1;
+          }
+        }
+        if (nc <= 0) {
+          syntax_error(22);  /* invalid numeric expansion */
+          return 0;
+        }
+      }
+      else {
+        syntax_error(10);  /* identifier expected */
+        return 0;
+      }
+
+    }
+    else if (name = parse_symbol(&s)) {
+      if ((sym = find_symbol(name)) && sym->type == STRSYM) {
+        nc = sprintf(d,sym->text);
+      }
+    }
+
+    /* skip terminating '\' if present */
+    if (*s == '\\')
+      s++;
+
+    if (nc >= dlen)
       nc = -1;
-    else if (nc >= 0)
+    else if (nc > 0)
+      *line = s;  /* update line pointer when expansion took place */
+  }
+  else if (*s == '{') {
+    /* possible string symbol expansion detected */
+    s++;
+
+    if (name = parse_symbol(&s)) {
+      if ((sym = find_symbol(name)) && sym->type == STRSYM) {
+        nc = sprintf(d,sym->text);
+      }
+    }
+
+    /* check for terminating '}' */
+    if (*s == '}')
+      s++;
+    else
+      nc = 0;
+
+    if (nc >= dlen)
+      nc = -1;
+    else if (nc > 0)
       *line = s;  /* update line pointer when expansion took place */
   }
 

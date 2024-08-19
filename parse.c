@@ -1275,16 +1275,13 @@ char *read_next_line(void)
 
   /* copy next line to linebuf */
   while (s<srcend && *s!='\0') {
-    int nc;
+    int nc = 0;  
 
     if (nparam >= 0)
       nc = expand_macro(cur_src,&s,d,len);  /* try macro arg. expansion */
-    else
-      nc = 0;
 
-    if (nc == 0) {
-      nc = expand_ctrlchars(cur_src,&s,d,len);  /* try syntax-specific control character expansion */
-    }
+    if (nc == 0)
+      nc = expand_ctrlchars(cur_src,&s,d,len); /* try control character expansion */
 
     if (nc > 0) {
       /* expanded macro arguments or control characters */
@@ -1314,7 +1311,7 @@ char *read_next_line(void)
         len--;
       }
       else
-      	nc = -1;
+        nc = -1;
     }
 
     if (nc < 0) {

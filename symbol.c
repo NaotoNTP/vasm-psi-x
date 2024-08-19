@@ -17,11 +17,6 @@ static hashtable *symhash;
 static hashtable *regsymhash;
 #endif
 
-#ifndef STRSYMHTSIZE
-#define STRSYMHTSIZE 0x8000
-#endif
-static hashtable *strsymhash;
-
 static void print_type(FILE *f,symbol *p)
 {
   static const char *typename[] = {"???","obj","func","sect","file"};
@@ -507,47 +502,34 @@ int undef_regsym(const char *name,int no_case,int type)
 #endif /* HAVE_REGSYMS */
 
 
-void add_strsym(strsym *ssym)
+symbol *new_strsym(char *name,strbuf *text)
 {
-  hashdata data;
+  symbol *new = find_symbol(name);
+  int add;
 
-  data.ptr = ssym;
-  add_hashentry(strsymhash,ssym->name,data);
-}
-
-strsym *find_strsym(char *name,int len)
-{
-  hashdata data;
-
-  if (find_namelen(strsymhash,name,len,&data))
-    return data.ptr;
-  return NULL;
-}
-
-void *new_strsym(char *name,strbuf *text)
-{
-  symbol *sym = find_symbol(name);
-  strsym *ssym = find_strsym(name,strlen(name));
-
-  /* check if string symbol already exists */
-  if (ssym!=NULL) {
-    general_error(88,name);  /* string symbol redefined */
-    return;
+  if (new) {
+		general_error(89,name); /* symbol cannot be redefined as a string symbol */
+    add=0;
+  }
+  else {
+    new = mymalloc(sizeof(*new));
+    new->name = mystrdup(name);
+    add = 1;
   }
 
-  /* check if the name of this symbol has already been used for a normal symbol */
-  if (sym!=NULL) {
-    general_error(89,name);  /* symbol cannot be redefined as a string symbol */
-    return;
-  }
-  
-  ssym = mymalloc(sizeof(strsym));
-  ssym->name = mystrdup(name);
-  ssym->text = mystrdup(text->str);
-  add_strsym(ssym);
-  new_equate(ssym->name,number_expr(0)); /* dummy equate to ensure no overlap and detection by 'ifdef' */
+  new->type = STRSYM;
+  new->sec = 0;
+	new->expr = number_expr(0);
+  new->text = mystrdup(text->str);
 
-  return;
+  if (add) {
+    add_symbol(new);
+    new->flags = 0;
+    new->size = 0;
+    new->align = 0;
+  }
+
+  return new;
 }
 
 
@@ -557,7 +539,6 @@ int init_symbol(void)
 #ifdef HAVE_REGSYMS
   regsymhash = new_hashtable(REGSYMHTSIZE);
 #endif
-  strsymhash = new_hashtable(STRSYMHTSIZE);
   return 1;
 }
 
@@ -571,7 +552,5 @@ void exit_symbol(void)
     if (regsymhash->collisions)
       fprintf(stderr,"*** %d register symbol collisions!!\n",regsymhash->collisions);
 #endif
-    if (strsymhash->collisions)
-      fprintf(stderr,"*** %d string symbol collisions!!\n",strsymhash->collisions);
   }
 }
