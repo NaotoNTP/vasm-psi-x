@@ -678,7 +678,7 @@ macro *new_macro(char *name,struct namelen *maclist,struct namelen *endmlist,
 
     cur_macro = m;
     enddir_list = endmlist;
-    enddir_minlen = dirlist_minlen(endmlist);
+    enddir_minlen = (endmlist != NULL) ? dirlist_minlen(endmlist) : 0;
     macrdir_list = maclist;
     rept_cnt = -1;
     rept_start = NULL;
@@ -1183,7 +1183,20 @@ char *read_next_line(void)
   /* line buffer starts with 0, to allow checks for left-hand character */
   *d++ = 0;
 
-  if (enddir_list!=NULL && (size_t)(srcend-s)>enddir_minlen) {
+	/* short macro definition check */
+	if ((cur_macro != NULL) && (enddir_list == NULL)) {
+		if (cur_src->line - cur_macro->defline > 1) 
+			add_macro();  /* link macro-definition into hash-table */
+		else {
+			/* ignore rest of line, treat as comment */
+			s = skip_eol(s,srcend);
+			if (listena) {
+				list_skipped_line(s);
+				skip_listing = 1;
+			}			
+		}
+	}
+  else if (enddir_list!=NULL && (size_t)(srcend-s)>enddir_minlen) {
     /* reading a definition, like a macro or a repeat-block, until an
        end directive is found */
     struct namelen *dir;

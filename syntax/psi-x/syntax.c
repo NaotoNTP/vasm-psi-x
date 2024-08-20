@@ -37,10 +37,10 @@ static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
 
-static char rs_name[] = "{__RS__}";
+static char rs_name[] = "{-RS-}";
 
 static struct namelen macro_dirlist[] = {
-  { 5,"macro" }, { 0,0 }
+  { 5,"macro" }, { 6,"macros" }, { 0,0 }
 };
 static struct namelen endm_dirlist[] = {
   { 4,"endm" }, { 0,0 }
@@ -1960,6 +1960,21 @@ void parse(void)
 
         refer_symbol(sym,mystrdup(labname));
         eol(s);
+        continue;
+      }
+      else if (!strnicmp(s,"macros",6) &&
+               (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
+                || *(s+6)==commentchar)) {
+        char *params = skip(s+6);
+        strbuf *buf;
+
+        if(ISEOL(params))
+          params = NULL;
+
+        s = line;
+        if (!(buf = parse_identifier(0,&s)))
+          ierror(0);
+        new_macro(buf->str,macro_dirlist,NULL,params);
         continue;
       }
       else if (!strnicmp(s,"macro",5) &&
