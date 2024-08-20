@@ -86,7 +86,7 @@
   "external symbol <%s> must not be defined",ERROR,             /* 85 */
   "missing definition for symbol <%s>",NOLINE|WARNING,
   "additional macro arguments ignored (expecting %d)",WARNING,
-  "string symbol <%s> redefined",ERROR,
+  "",ERROR,
   "symbol <%s> cannot be redefined as a string symbol",ERROR,
   "internal symbol <%s> not found",ERROR,						/* 90 */
   "odd number of nybbles given",ERROR,

@@ -44,7 +44,7 @@ struct symbol {
   int type;
   uint32_t flags;
   const char *name;
-  const char *text;
+  char *text;
   expr *expr;
   expr *size;
   section *sec;
@@ -98,7 +98,7 @@ regsym *new_regsym(int,int,const char *,int,unsigned int,unsigned int);
 int undef_regsym(const char *,int,int);
 #endif /* HAVE_REGSYMS */
 
-symbol *new_strsym(char *,strbuf *);
+symbol *new_strsym(char *,char *);
 
 int init_symbol(void);
 void exit_symbol(void);

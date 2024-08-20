@@ -502,14 +502,19 @@ int undef_regsym(const char *name,int no_case,int type)
 #endif /* HAVE_REGSYMS */
 
 
-symbol *new_strsym(char *name,strbuf *text)
+symbol *new_strsym(char *name,char *text)
 {
   symbol *new = find_symbol(name);
   int add;
 
   if (new) {
-		general_error(89,name); /* symbol cannot be redefined as a string symbol */
-    add=0;
+    if (new->flags&EQUATE)
+      general_error(67,name); /* repeatedly defined symbol (error) */
+		if (new->type != STRSYM)
+			general_error(89,name); /* symbol cannot be redefined as a string symbol */
+    else
+			myfree(new->text);
+		add = 0;
   }
   else {
     new = mymalloc(sizeof(*new));
@@ -520,7 +525,7 @@ symbol *new_strsym(char *name,strbuf *text)
   new->type = STRSYM;
   new->sec = 0;
 	new->expr = number_expr(0);
-  new->text = mystrdup(text->str);
+  new->text = mystrdup(text);
 
   if (add) {
     add_symbol(new);

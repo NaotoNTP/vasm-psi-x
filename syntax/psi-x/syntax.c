@@ -1938,8 +1938,24 @@ void parse(void)
         }
       }
       else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
+        symbol *sym;
+        strbuf *name;
+
         s = skip(s+4);
-        new_strsym(labname,parse_name(0,&s));
+
+        if (name = parse_identifier(1,&s)) {
+          if ((sym = find_symbol(name->str)) && sym->type == STRSYM)
+            new_strsym(labname,sym->text);
+          else
+            syntax_error(27,name);
+        }
+        else if (name = parse_name(1,&s)) {
+          new_strsym(labname,name->str);
+        }
+        else {
+          syntax_error(28);
+        }
+
         eol(s);
         continue;
       }

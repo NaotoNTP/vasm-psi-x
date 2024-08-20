@@ -27,4 +27,6 @@
 
   "invalid \"public\" parameter (must be either \"on\" or \"off\")",ERROR,	/* 24 */
   "invalid data size value (%d bytes)",ERROR,																/* 25 */
-  "local macro variable \"%s\" already declared",WARNING,											/* 26 */
+  "local macro variable <%s> already declared",WARNING,											/* 26 */
+	"string symbol <%s> not found",ERROR,																			/* 27 */
+	"invalid string symbol assignment",ERROR,																	/* 28 */
