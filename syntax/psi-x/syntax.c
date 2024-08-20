@@ -373,6 +373,22 @@ strbuf *get_local_label(int n,char **start)
   return name;
 }
 
+/* attempts to find an return the name of a declared local macro variable */
+char *find_macvar(source *src,char *name,size_t len)
+{
+  struct macarg *macvar;
+
+  if (src->macro != NULL) {
+    for (macvar = src->irpvals; macvar != NULL ; macvar = macvar->argnext) {
+      /* @@@ case-sensitive comparison? */
+      if (macvar->arglen == len && strncmp(macvar->argname,name,len) == 0) {
+        return macvar->argname;
+      }
+    }
+  }
+  return NULL;
+}
+
 /*
  *  Reserve Symbol Directives
  */
@@ -1212,8 +1228,34 @@ static void handle_shift(char *s)
       shift->expr->c.val++;
   }
   else
-    syntax_error(7);  /* unexpected "shift" outside a macro*/
+    syntax_error(7,"shift");  /* unexpected use of "shift" outside a macro */
   eol(s);
+}
+
+static void handle_local(char *s)
+{
+  source *src = cur_src;
+
+  if (src->macro != NULL) {
+    strbuf *name;
+    char *found;
+  
+    while (name = parse_identifier(0,&s)) {
+      found = find_macvar(src,name->str,name->len);
+
+      if (found == NULL)
+        addmacarg(&src->irpvals,name->str,name->str+name->len);
+      else
+        syntax_error(26,name->str);  /* local macro variable already declared */
+
+      s = skip(s);
+      if (*s != ',')
+        break;
+      s = skip(s+1);
+    }
+  }
+  else
+    syntax_error(7,"local");  /* unexpected use of "local" outside a macro */
 }
 
 static void handle_mexit(char *s)
@@ -1304,16 +1346,6 @@ static void do_bind(char *s,unsigned bind)
   s = skip(s + 1);
   }
   eol(s);
-}
-
-static void handle_local(char *s)
-{
-  do_bind(s,LOCAL);
-}
-
-static void handle_weak(char *s)
-{
-  do_bind(s,WEAK);
 }
 
 static void handle_global(char *s)
@@ -1574,6 +1606,7 @@ struct {
 
   "purge",handle_purge,
   "shift",handle_shift,
+  "local",handle_local,
   "mexit",handle_mexit,
   "endm",handle_endm,
   
@@ -2145,7 +2178,6 @@ static int macro_arg_defined(source *src,char *argstart,char *argend,char *d,int
   return 0;
 }
 
-
 /* expands arguments and special escape codes into macro context */
 int expand_macro(source *src,char **line,char *d,int dlen)
 {
@@ -2193,9 +2225,19 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       s++;
     }
     else if ((end = skip_identifier(s)) != NULL) {
+      char *varname;
+
       if ((n = find_macarg_name(src,s,end-s)) >= 0) {
         /* \argname: insert named macro parameter n */
         nc = copy_macro_param(src,(n+shift->expr->c.val),d,dlen);
+        s = end;
+      }
+      else if ((varname = find_macvar(src,s,end-s)) != NULL) {
+        /* \varname: insert local macro variable with surrounding slashes */
+        if (*end == '\\')
+          nc = sprintf(d,"\\%s_%lu$\\",varname,src->id);
+        else
+          nc = sprintf(d,"\\%s_%lu$",varname,src->id);
         s = end;
       }
     }
@@ -2210,10 +2252,17 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       *line = s;  /* update line pointer when expansion took place */
   }
   else if ((end = skip_identifier(s)) != NULL) {
-  /* possible named macro argument expansion detected (without leading '\') */
+  /* possible named macro argument or variable expansion detected (without leading '\') */
+		char *varname;
+
     if ((n = find_macarg_name(src,s,end-s)) >= 0) {
       /* argname: insert named macro parameter n */
       nc = copy_macro_param(src,(n+shift->expr->c.val),d,dlen);
+      s = end;
+    }
+    else if ((varname = find_macvar(src,s,end-s)) != NULL) {
+      /* varname: insert local macro variable */
+      nc = sprintf(d,"%s_%lu$",varname,src->id);
       s = end;
     }
 
