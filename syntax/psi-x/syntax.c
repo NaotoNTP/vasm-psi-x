@@ -1497,6 +1497,7 @@ struct {
   "equ",handle_absentid,
   "equs",handle_absentid,
   "macro",handle_absentid,
+  "macros",handle_absentid,
   "set",handle_absentid,
   "struct",handle_absentid,
 
