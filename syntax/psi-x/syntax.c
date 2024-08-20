@@ -2233,11 +2233,18 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         s = end;
       }
       else if ((varname = find_macvar(src,s,end-s)) != NULL) {
-        /* \varname: insert local macro variable with surrounding slashes */
-        if (*end == '\\')
-          nc = sprintf(d,"\\%s_%lu$\\",varname,src->id);
-        else
-          nc = sprintf(d,"\\%s_%lu$",varname,src->id);
+        /* \varname: insert local macro variable and handle string symbol expansion */
+        symbol *sym;
+        char *t = d;
+
+        nc = sprintf(d,"%s_%lu$",varname,src->id);
+
+        if (varname = parse_symbol(&t)) {
+          if ((sym = find_symbol(varname)) && sym->type == STRSYM) {
+            nc = sprintf(d,sym->text);
+          }
+        }
+
         s = end;
       }
     }
@@ -2250,6 +2257,40 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       nc = -1;
     else if (nc >= 0)
       *line = s;  /* update line pointer when expansion took place */
+  }
+  else if (*s == '{') {
+  /* possible local macro string variable expansion detected */
+    s++;
+
+    if ((end = skip_identifier(s)) != NULL) {
+      char *varname;
+
+      if ((varname = find_macvar(src,s,end-s)) != NULL) {
+        symbol *sym;
+        char *t = d + 1;
+
+        if (*end == '}') {
+          nc = sprintf(d,"{%s_%lu$}",varname,src->id);
+          s = end + 1;
+        }
+        else {
+          nc = sprintf(d,"{%s_%lu$",varname,src->id);
+          s = end;
+        }
+
+        if (varname = parse_symbol(&t)) {
+          if ((*end == '}') && (sym = find_symbol(varname)) && sym->type == STRSYM) {
+            nc = sprintf(d,sym->text);
+            s = end + 1;
+          }
+        }
+      }
+    }
+
+    if (nc >= dlen)
+      nc = -1;
+    else if (nc > 0)
+     *line = s;  /* update line pointer when expansion took place */
   }
   else if ((end = skip_identifier(s)) != NULL) {
   /* possible named macro argument or variable expansion detected (without leading '\') */
