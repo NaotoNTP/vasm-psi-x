@@ -1500,6 +1500,7 @@ struct {
   "macros",handle_absentid,
   "set",handle_absentid,
   "struct",handle_absentid,
+  "substr",handle_absentid,
 
   "rsset",handle_rsset,  
   "rsreset",handle_rsreset,
@@ -1938,22 +1939,22 @@ void parse(void)
         }
       }
       else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
+        strbuf *buf;
         symbol *sym;
-        strbuf *name;
 
         s = skip(s+4);
 
-        if (name = parse_identifier(1,&s)) {
-          if ((sym = find_symbol(name->str)) && sym->type == STRSYM)
+        if (buf = parse_identifier(1,&s)) {
+          if ((sym = find_symbol(buf->str)) && sym->type == STRSYM)
             new_strsym(labname,sym->text);
           else
-            syntax_error(27,name);
+            syntax_error(27,buf->str); /* string symbol not found */
         }
-        else if (name = parse_name(1,&s)) {
-          new_strsym(labname,name->str);
+        else if (buf = parse_name(1,&s)) {
+          new_strsym(labname,buf->str);
         }
         else {
-          syntax_error(28);
+          syntax_error(28); /* invalid string symbol assignment */
         }
 
         eol(s);
@@ -2019,6 +2020,98 @@ void parse(void)
           ierror(0);
         if (new_structure(buf->str))
           current_section->flags |= LABELS_ARE_LOCAL;
+        continue;
+      }
+      else if (!strnicmp(s,"substr",6) && isspace((unsigned char)*(s+6))) {
+        strbuf *buf;
+        symbol *sym;
+        char *text, substr[256];
+        int start, end, len;
+        char backup;
+
+        s = skip(s+6);
+
+        /* parse start index parameter */
+        if (*s == ',') {
+          start = 0;
+        }
+        else {
+          start = parse_constexpr(&s);
+          if (start < 0) {
+            syntax_error(29); /* substring index must be positive */
+            continue;
+          }
+        }
+        
+        s = skip(s);
+        if (*s != ',') {
+          syntax_error(5); /* missing operand */
+          continue;
+        }
+        s = skip(s+1);
+        
+        /* parse end index parameter */
+        if (*s == ',') {
+          end = -1;
+        }
+        else {
+          end = parse_constexpr(&s);
+          if (end < 0) {
+            syntax_error(29); /* substring index must be positive */
+            continue;
+          }
+          else if (end <= start) {
+            syntax_error(30); /* substring ending index greater than the starting index */
+            continue;
+          }
+        }
+        
+        s = skip(s);
+        if (*s != ',') {
+          syntax_error(5); /* missing operand */
+          continue;
+        }
+        s = skip(s+1);
+
+        if (buf = parse_identifier(1,&s)) {
+          if (!(sym = find_symbol(buf->str)) && !(sym->type == STRSYM)) {
+            syntax_error(27,buf->str); /* string symbol not found */
+            eol(s);
+            continue;
+          }
+        }
+        else if (!(buf = parse_name(1,&s))) {
+          syntax_error(28); /* invalid string symbol assignment */
+          eol(s);
+          continue;
+        }
+
+        /* duplicate the string data */
+        if (sym)
+          text = mystrdup(sym->text);
+        else
+          text = mystrdup(buf->str);
+
+        /* get the copy length and set the ending position if necessary */
+        if (end < 0)
+          end = strlen(text);
+        else if (end > strlen(text)) {
+          syntax_error(31); /* substring ending index greater length of string */
+          myfree(text);
+          eol(s);
+          continue;
+        }
+
+        len = end - start;
+
+        /* create the substring and assign it to the symbol */
+        strncpy(substr,&text[start],len);
+        substr[len] = '\0';
+        new_strsym(labname,substr);
+
+        /* free the memory containing duplicate string data and continue parsing */
+        myfree(text);
+        eol(s);
         continue;
       }
       else if (offs_directive(s,"rs")) {
