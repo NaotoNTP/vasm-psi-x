@@ -104,6 +104,11 @@ static int inline_stack_index;
 static const char *saved_last_global_label;
 static char inl_lab_name[8];
 
+/* pushp/popp string stack */
+#define STRSTACKSIZE 100
+static char *string_stack[STRSTACKSIZE];
+static int string_stack_index;
+
 int isidchar(char c)
 {
   if (isalnum((unsigned char)c) || c=='_' || c=='?')
@@ -1100,6 +1105,7 @@ static void handle_module(char *s)
   }
   else
     syntax_error(14,INLSTACKSIZE);  /* maximum module nesting depth exceeded */
+  eol(s);
 }
 
 static void handle_endmodule(char *s)
@@ -1115,7 +1121,71 @@ static void handle_endmodule(char *s)
     }
   }
   else
-  syntax_error(12,"modend","module");  /* unexpected modend without module */
+    syntax_error(12,"modend","module");  /* unexpected modend without module */
+  eol(s);
+}
+
+/*
+ *  String Stack Directives
+ */
+static void handle_pushp(char *s)
+{
+  strbuf *buf;
+  symbol *sym;
+  char *text;
+
+  s = skip(s);
+
+  if (buf = parse_identifier(0,&s)) {
+    if ((sym = find_symbol(buf->str)) && sym->type == STRSYM)
+      text = mystrdup(sym->text);
+    else {
+      syntax_error(27,buf->str); /* string symbol not found */
+      return;
+    }
+  }
+  else if (buf = parse_name(0,&s)) {
+    text = mystrdup(buf->str);
+  }
+  else {
+    syntax_error(28); /* quoted string or string symbol expected in operand */
+    return;
+  }
+
+  if (string_stack_index < STRSTACKSIZE)
+    string_stack[string_stack_index++] = text;
+  else {
+    myfree(text);
+    syntax_error(32,STRSTACKSIZE);  /* string stack capacity reached */
+  }
+  eol(s);
+}
+
+static void handle_popp(char *s)
+{
+  strbuf *buf;
+  symbol *sym;
+
+  s = skip(s);
+
+  if (string_stack_index > 0 ) {
+    if (buf = parse_identifier(0,&s)) {
+      if ((sym = find_symbol(buf->str)) && sym->type == STRSYM) {     
+        new_strsym(buf->str,string_stack[--string_stack_index]);
+        myfree(string_stack[string_stack_index]);
+      }
+      else {
+        syntax_error(27,buf->str); /* string symbol not found */
+      }
+    }
+    else {
+      syntax_error(10);  /* identifier expected */
+    }
+  }
+  else {
+    syntax_error(33);  /* string stack empty */
+  }
+  eol(s);
 }
 
 /*
@@ -1595,6 +1665,8 @@ struct {
   "comment",handle_comment,
   "comend",handle_comend,
   "ends",handle_endstruct,
+  "pushp",handle_pushp,
+  "popp",handle_popp,
 
   "rept",handle_rept,
   "irp",handle_irp,
@@ -1954,7 +2026,7 @@ void parse(void)
           new_strsym(labname,buf->str);
         }
         else {
-          syntax_error(28); /* invalid string symbol assignment */
+          syntax_error(28); /* quoted string or string symbol expected in operand */
         }
 
         eol(s);
@@ -2081,7 +2153,7 @@ void parse(void)
           }
         }
         else if (!(buf = parse_name(1,&s))) {
-          syntax_error(28); /* invalid string symbol assignment */
+          syntax_error(28); /* quoted string or string symbol expected in operand */
           eol(s);
           continue;
         }

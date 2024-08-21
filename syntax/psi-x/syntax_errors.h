@@ -29,7 +29,9 @@
   "invalid data size value (%d bytes)",ERROR,																				/* 25 */
   "local macro variable <%s> already declared",WARNING,															/* 26 */
 	"string symbol <%s> not found",ERROR,																							/* 27 */
-	"invalid string symbol assignment",ERROR,																					/* 28 */
+	"quoted string or string symbol expected in operand",ERROR,												/* 28 */
 	"substring index must be positive",ERROR,																					/* 29 */
 	"substring ending index cannot be greater than the starting index",ERROR,					/* 30 */
-	"substring ending index cannot be greater than the lenght of the string",ERROR,		/* 31 */
+	"substring ending index cannot be greater than the length of the string",ERROR,		/* 31 */
+	"string stack capacity reached (%d)",ERROR,																				/* 32 */
+	"string stack is empty",ERROR,																										/* 33 */
