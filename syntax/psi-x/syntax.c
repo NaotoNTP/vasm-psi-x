@@ -109,6 +109,15 @@ static char inl_lab_name[8];
 static char *string_stack[STRSTACKSIZE];
 static int string_stack_index;
 
+int isidstart(char c)
+{
+  if (isalpha((unsigned char)c) || c==local_char || c=='_')
+    return 1;
+  if (dot_idchar && c=='.')
+    return 1;
+  return 0;
+}
+
 int isidchar(char c)
 {
   if (isalnum((unsigned char)c) || c=='_' || c=='?')
@@ -1136,7 +1145,7 @@ static void handle_pushp(char *s)
 
   s = skip(s);
 
-  if (buf = parse_identifier(0,&s)) {
+  if ((buf = get_local_label(0,&s)) || (buf = parse_identifier(0,&s))) {
     if ((sym = find_symbol(buf->str)) && sym->type == STRSYM)
       text = mystrdup(sym->text);
     else {
@@ -1169,7 +1178,7 @@ static void handle_popp(char *s)
   s = skip(s);
 
   if (string_stack_index > 0 ) {
-    if (buf = parse_identifier(0,&s)) {
+    if ((buf = get_local_label(0,&s)) || (buf = parse_identifier(0,&s))) {
       if ((sym = find_symbol(buf->str)) && sym->type == STRSYM) {     
         new_strsym(buf->str,string_stack[--string_stack_index]);
         myfree(string_stack[string_stack_index]);
@@ -2016,7 +2025,7 @@ void parse(void)
 
         s = skip(s+4);
 
-        if (buf = parse_identifier(1,&s)) {
+        if ((buf = get_local_label(1,&s)) || (buf = parse_identifier(1,&s))) {
           if ((sym = find_symbol(buf->str)) && sym->type == STRSYM)
             new_strsym(labname,sym->text);
           else
@@ -2145,7 +2154,7 @@ void parse(void)
         }
         s = skip(s+1);
 
-        if (buf = parse_identifier(1,&s)) {
+        if ((buf = get_local_label(1,&s)) || (buf = parse_identifier(1,&s))) {
           if (!(sym = find_symbol(buf->str)) && !(sym->type == STRSYM)) {
             syntax_error(27,buf->str); /* string symbol not found */
             eol(s);

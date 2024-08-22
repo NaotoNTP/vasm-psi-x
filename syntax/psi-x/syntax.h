@@ -2,8 +2,9 @@
 /* (c) in 2024 by 'Naoto' */
 
 /* macros to recognize identifiers */
+int isidstart(char);
 int isidchar(char);
-#define ISIDSTART(x) ((x)=='.'||(x)=='@'||(x)=='_'||isalpha((unsigned char)(x)))
+#define ISIDSTART(x) isidstart(x)
 #define ISIDCHAR(x) isidchar(x)
 #define ISBADID(p,l) ((l)==1&&(*(p)=='.'||*(p)=='@'||*(p)=='_'))
 #define ISEOL(p) (*(p)=='\0' || *(p)==commentchar)
