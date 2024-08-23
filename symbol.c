@@ -403,11 +403,13 @@ expr *set_internal_abs(const char *name,taddr newval)
 /* remove an internal symbol from the hash table */
 int undef_internal_sym(const char *name,int no_case)
 {
-  symbol *sym = internal_abs(name);
+	symbol *sym = find_symbol(name);
 
-  if (sym != NULL && (sym->flags & VASMINTERN)) {
+  if (sym != NULL) {
+		if (sym->flags & VASMINTERN) {
       rem_hashentry(symhash,name,no_case);
       return 1;
+		}
   }
   else
     general_error(90,name);  /* internal symbol not found */

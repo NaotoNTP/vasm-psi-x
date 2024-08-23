@@ -37,7 +37,7 @@ static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
 
-static char rs_name[] = "{-RS-}";
+static char rs_name[] = "=RS";
 
 static struct namelen macro_dirlist[] = {
   { 5,"macro" }, { 6,"macros" }, { 0,0 }
@@ -72,12 +72,27 @@ static struct namelen until_dirlist[] = {
 static int parse_end = 0;
 
 /* options */
-static int align_data;
-static int allow_spaces;
-static int alt_numeric;
 static int dot_idchar;
-static int auto_export;
-static char local_char = '.';
+
+static struct options {
+  int ae;   /* AE - Automatic Even */
+  int an;   /* AN - Alternate Numeric */
+  int	c;    /* C - Case Sensitivity */
+  char l;   /* L - Local Label Signifier */
+  int w;    /* W - Print warning messages */
+  int ws;   /* WS - Allow white spaces */
+} options = {
+  1,      /* AE - Automatic Even */
+  0,      /* AN - Alternate Numeric */
+  1,      /* C - Case Sensitivity */
+  '@',    /* L - Local Label Signifier */
+  1,      /* W - Print Warning Messages */
+  0,      /* WS - Allow White Spaces */
+};
+
+#define OPTSTACKSIZE 100
+static struct options options_stack[OPTSTACKSIZE];
+static int options_stack_index;
 
 static char *labname;  /* current label field for assignment directives */
 static unsigned anon_labno;
@@ -111,7 +126,7 @@ static int string_stack_index;
 
 int isidstart(char c)
 {
-  if (isalpha((unsigned char)c) || c==local_char || c=='_')
+  if (isalpha((unsigned char)c) || c==options.l || c=='_')
     return 1;
   if (dot_idchar && c=='.')
     return 1;
@@ -150,7 +165,7 @@ char *skip(char *s)
 /* check for end of line, issue error, if not */
 void eol(char *s)
 {
-  if (allow_spaces) {
+  if (options.ws) {
     s = skip(s);
     if (!ISEOL(s))
       syntax_error(6);
@@ -163,7 +178,7 @@ void eol(char *s)
 
 char *exp_skip(char *s)
 {
-  if (allow_spaces) {
+  if (options.ws) {
     char *start = s;
 
     s = skip(start);
@@ -266,7 +281,7 @@ static int intel_suffix(char *s)
 char *const_prefix(char *s,int *base)
 {
   if (isdigit((unsigned char)*s)) {
-    if (alt_numeric && (radix_base <= 10) && (*base = intel_suffix(s)))
+    if (options.an && (radix_base <= 10) && (*base = intel_suffix(s)))
       return s;
     if (*s == '0') {
       if (s[1]=='x' || s[1]=='X'){
@@ -347,7 +362,7 @@ strbuf *get_local_label(int n,char **start)
   s = *start;
   p = skip_local(s);
 
-  if (p!=NULL && *p==':' && ISIDSTART(*s) && *s!=local_char && *(p-1)!='$') {
+  if (p!=NULL && *p==':' && ISIDSTART(*s) && *s!=options.l && *(p-1)!='$') {
     /* skip local part of global.local label */
     s = p + 1;
     if (p = skip_local(s)) {
@@ -357,7 +372,7 @@ strbuf *get_local_label(int n,char **start)
     else
       return NULL;
   }
-  else if (p!=NULL && p>(s+1) && *s==local_char) {  /* .label */
+  else if (p!=NULL && p>(s+1) && *s==options.l) {  /* .label */
     s++;
     name = make_local_label(n,NULL,0,s,p-s);
     *start = skip(p);
@@ -455,7 +470,7 @@ static symbol *new_setoffset_size(char *equname,char *symname,
     new = make_expr(MUL,parse_expr_tmplab(s),number_expr(size));
     simplify_expr(new);
 
-    if (align_data && size>1) {
+    if ((options.ae) && size>1) {
       /* align the current offset symbol first */
       utaddr dalign = DATA_ALIGN((int)size*8) - 1;
 
@@ -581,7 +596,7 @@ static void handle_datadef(char *s,int size)
         atom *a;
 
         a = new_datadef_atom(OPSZ_BITS(size),op);
-        if (!align_data)
+        if (!options.ae)
           a->align = 1;
         add_atom(0,a);
       }
@@ -622,7 +637,7 @@ static atom *do_space(int size,expr *cnt,expr *fill)
   atom *a;
 
   a = new_space_atom(cnt,size>>3,fill);
-  a->align = align_data ? DATA_ALIGN(size) : 1;
+  a->align = options.ae ? DATA_ALIGN(size) : 1;
   add_atom(0,a);
   return a;
 }
@@ -1558,6 +1573,113 @@ static void handle_end(char *s)
 }
 
 /*
+ *  Options Directives
+ */
+int read_opt_arg(char *s) {
+  switch (*s) {
+    case '+': return 1;
+    case '-': return 0;
+    default: return -1;
+  }
+}
+
+static void handle_opt(char *s)
+{
+  int arg;
+
+  s = skip(s);
+  for (;;) {
+    /* check for syntax options */
+    if (!strnicmp(s,"ae",2)) {
+      s += 2;
+      if ((arg = read_opt_arg(s)) != -1)
+        options.ae = arg;
+      else
+        syntax_error(34,*s);
+      s++;
+    }
+    else if (!strnicmp(s,"an",2)) {
+      s += 2;
+      if ((arg = read_opt_arg(s)) != -1)
+        options.an = arg;
+      else
+        syntax_error(34,*s);
+      s++;
+    }
+    else if (!strnicmp(s,"ws",2)) {
+      s += 2;
+      if ((arg = read_opt_arg(s)) != -1)
+        options.ws = arg;
+      else
+        syntax_error(34,*s);
+      s++;
+    }
+    else if (!strnicmp(s,"c",1)) {
+      s++;
+      if ((arg = read_opt_arg(s)) != -1)
+        nocase = options.c = arg;
+      else
+        syntax_error(34,*s);
+      s++;
+    }
+    else if (!strnicmp(s,"w",1)) {
+      s++;
+      if ((arg = read_opt_arg(s)) != -1)
+        no_warn = (options.w = arg) ? 0 : 1;
+      else
+        syntax_error(34,*s);
+      s++;
+    }
+    else if (!strnicmp(s,"l",1)) {
+      s++;
+      if ((arg = read_opt_arg(s)) >= 0) {
+        options.l = (arg) ? '.' : '@';
+      }
+      else
+        options.l = *s;
+      s++;
+    }
+    else {
+      syntax_error(35);
+    }
+
+    s = skip(s);
+    if (*s != ',')
+      break;
+    s = skip(s+1);
+  }
+  eol(s);
+}
+
+static void handle_pusho(char *s)
+{
+  s = skip(s);
+
+  if (options_stack_index < OPTSTACKSIZE) {
+    options_stack[options_stack_index++] = options;
+  }
+  else {
+    syntax_error(36,OPTSTACKSIZE);  /* options stack capacity reached */
+  }
+  eol(s);
+}
+
+static void handle_popo(char *s)
+{
+  s = skip(s);
+
+  if (options_stack_index > 0 ) {
+    options = options_stack[--options_stack_index];
+    no_warn = (options.w) ? 0 : 1;
+    nocase = options.c;
+  }
+  else {
+    syntax_error(37);  /* options stack is empty */
+  }
+  eol(s);
+}
+
+/*
  *  Directives That Require a Leading Identifier
  */
 static void handle_absentid(char *s)
@@ -1702,6 +1824,9 @@ struct {
   "xdef",handle_xdef,
   "public",handle_public,
 
+  "opt",handle_opt,
+  "pusho",handle_pusho,
+  "popo",handle_popo,
   "radix",handle_radix,
   "disable",handle_disable,
   "inform",handle_inform,
@@ -2209,9 +2334,6 @@ void parse(void)
         label->flags |= symflags;
         add_atom(0,new_label_atom(label));
       }
-
-      if (!is_local_label(labname) && auto_export)
-        label->flags |= EXPORT|XDEF;
     }
 
     /* check for directives */
@@ -2268,7 +2390,7 @@ void parse(void)
 #endif
       op_cnt++;
       
-      if (allow_spaces) {
+      if (options.ws) {
         s = skip(s);
         if (*s != ',')
           break;
@@ -2298,7 +2420,7 @@ void parse(void)
 
     if (ip) {
 #if MAX_OPERANDS>0
-      if (allow_spaces && ip->op[0]==NULL && op_cnt!=0)
+      if (options.ws && ip->op[0]==NULL && op_cnt!=0)
         syntax_error(6);  /* mnemonic without operands has tokens in op.field */
 #endif
       add_atom(0,new_inst_atom(ip));
@@ -2646,6 +2768,8 @@ int init_syntax()
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
   esc_sequences = 0;
+  nocase = options.c;
+  no_warn = (options.w) ? 0 : 1;
   
   /*
    * Date & Time Constant Definitions 
@@ -2701,18 +2825,16 @@ int syntax_defsect(void)
 
 int syntax_args(char *p)
 {
-  if (!strcmp(p,"-align"))
-    align_data = 1;
+  if (!strcmp(p,"-noalign"))
+    options.ae = 0;
   else if (!strcmp(p,"-spaces"))
-    allow_spaces = 1;
+    options.ws = 1;
   else if (!strcmp(p,"-altnum"))
-    alt_numeric = 1;
+    options.an = 1;
   else if (!strcmp(p,"-altlocal"))
-    local_char = '@';
+    options.l = '.';
   else if (!strcmp(p,"-ldots"))
     dot_idchar = 1;
-  else if (!strcmp(p,"-autoexp"))
-    auto_export = 1;
   else
     return 0;
 

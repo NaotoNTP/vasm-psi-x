@@ -47,7 +47,7 @@ static unsigned char sgs = 0;         /* true enables & as immediate prefix */
 static unsigned char no_fpu = 0;      /* true: FPU code/direct. disallowed */
 static unsigned char elfregs = 0;     /* true: %Rn instead of Rn reg. names */
 static unsigned char fpu_id = 1;      /* default coprocessor id for FPU */
-static unsigned char opt_gen = 1;     /* generic optimizations (not Devpac) */
+static unsigned char opt_gen = 0;     /* generic optimizations (not Devpac) */
 static unsigned char opt_movem = 0;   /* MOVEM Rn -> MOVE Rn */
 static unsigned char opt_pea = 0;     /* MOVE.L #x,-(sp) -> PEA x */
 static unsigned char opt_clr = 0;     /* MOVE #0,<ea> -> CLR <ea> */
@@ -55,23 +55,23 @@ static unsigned char opt_st = 0;      /* MOVE.B #-1,<ea> -> ST <ea> */
 static unsigned char opt_lsl = 0;     /* LSL #1,Dn -> ADD Dn,Dn */
 static unsigned char opt_mul = 0;     /* MULU/MULS #n,Dn -> LSL/ASL #n,Dn */
 static unsigned char opt_div = 0;     /* DIVU/DIVS.L #n,Dn -> LSR/ASR #n,Dn */
-static unsigned char opt_fconst = 1;  /* Fxxx.D #m,FPn -> Fxxx.S #m,FPn */
+static unsigned char opt_fconst = 0;  /* Fxxx.D #m,FPn -> Fxxx.S #m,FPn */
 static unsigned char opt_brajmp = 0;  /* branch to different sect. into jump */
-static unsigned char opt_pc = 1;      /* <label> -> (<label>,PC) */
-static unsigned char opt_bra = 1;     /* B<cc>.L -> B<cc>.W -> B<cc>.B */
+static unsigned char opt_pc = 0;      /* <label> -> (<label>,PC) */
+static unsigned char opt_bra = 0;     /* B<cc>.L -> B<cc>.W -> B<cc>.B */
 static unsigned char opt_allbra = 0;  /* also optimizes sized branches */
 static unsigned char opt_jbra = 0;    /* JMP/JSR <ext> -> BRA.L/BSR.L (020+) */
-static unsigned char opt_disp = 1;    /* (0,An) -> (An), etc. */
-static unsigned char opt_abs = 1;     /* optimize absolute addresses to 16bit */
-static unsigned char opt_moveq = 1;   /* MOVE.L #x,Dn -> MOVEQ #x,Dn */
+static unsigned char opt_disp = 0;    /* (0,An) -> (An), etc. */
+static unsigned char opt_abs = 0;     /* optimize absolute addresses to 16bit */
+static unsigned char opt_moveq = 0;   /* MOVE.L #x,Dn -> MOVEQ #x,Dn */
 static unsigned char opt_nmovq = 0;   /* MOVE.L #x,Dn -> MOVEQ #x,Dn & NEG Dn*/
-static unsigned char opt_quick = 1;   /* ADD/SUB #x,Rn -> ADDQ/SUBQ #x,Rn */
-static unsigned char opt_branop = 1;  /* BRA.B *+2 -> NOP */
-static unsigned char opt_bdisp = 1;   /* base displacement optimization */
-static unsigned char opt_odisp = 1;   /* outer displacement optimization */
-static unsigned char opt_lea = 1;     /* ADD/SUB #x,An -> LEA (x,An),An */
-static unsigned char opt_lquick = 1;  /* LEA (x,An),An -> ADDQ/SUBQ #x,An */
-static unsigned char opt_immaddr = 1; /* <op>.L #x,An -> <op>.W #x,An */
+static unsigned char opt_quick = 0;   /* ADD/SUB #x,Rn -> ADDQ/SUBQ #x,Rn */
+static unsigned char opt_branop = 0;  /* BRA.B *+2 -> NOP */
+static unsigned char opt_bdisp = 0;   /* base displacement optimization */
+static unsigned char opt_odisp = 0;   /* outer displacement optimization */
+static unsigned char opt_lea = 0;     /* ADD/SUB #x,An -> LEA (x,An),An */
+static unsigned char opt_lquick = 0;  /* LEA (x,An),An -> ADDQ/SUBQ #x,An */
+static unsigned char opt_immaddr = 0; /* <op>.L #x,An -> <op>.W #x,An */
 static unsigned char opt_speed = 0;   /* optimize for speed, code may grow */
 static unsigned char opt_size = 0;    /* optimize for size, even when slower */
 static unsigned char opt_sc = 0;      /* external JMP/JSR are 16-bit PC-rel. */
@@ -6392,6 +6392,7 @@ char *parse_cpu_special(char *start)
       return skip_line(s);
     }
 
+#if 0
     else if (s-name==3 && !strnicmp(name,"opt",3)) {
       if (phxass_compat) {
         /* OPT [single-letter-options] - PhxAss options */
@@ -6414,6 +6415,7 @@ char *parse_cpu_special(char *start)
       }
       return skip_line(s);
     }
+#endif
 
     else if (phxass_compat && s-name==4 && !strnicmp(name,"optc",4)) {
       /* OPTC <expression> - set PhxAss optimization flags */

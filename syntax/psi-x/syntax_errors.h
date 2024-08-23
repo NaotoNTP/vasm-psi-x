@@ -35,3 +35,8 @@
 	"substring ending index cannot be greater than the length of the string",ERROR,		/* 31 */
 	"string stack capacity reached (%d)",ERROR,																				/* 32 */
 	"string stack is empty",ERROR,																										/* 33 */
+
+	"invalid option argument \"%c\"",ERROR,																		/* 34 */
+	"unrecognized option given",WARNING,																			/* 35 */
+	"options stack capacity reached (%d)",ERROR,															/* 36 */
+	"options stack is empty",ERROR,																						/* 37 */
