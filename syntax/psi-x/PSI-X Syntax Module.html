@@ -62,26 +62,19 @@ ul.no-bullet {list-style: none}
 </p> 
 <dl compact="compact">
 
-<dt>‘<samp>-align</samp>’</dt>
-<dd><p> Enables natural alignment for data (i.e. <code>dc</code>, <code>ds</code>) and
+<dt>‘<samp>-noalign</samp>’</dt>
+<dd><p> Disables natural alignment for data (i.e. <code>dc</code>, <code>ds</code>) and
  offset directives (<code>rs</code>).
 </p>
 </dd>
 
 <dt>‘<samp>-altlocal</samp>’</dt>
-<dd><p> Local symbols are prefixed by <code>'@'</code> instead of <code>'.'</code>. For
- compatibility with Psy-Q assemblers, where <code>'@'</code> is the default local symbol prefix.
+<dd><p> Local symbols are prefixed by <code>'.'</code> instead of <code>'@'</code>.
 </p>
 </dd>
 
 <dt>‘<samp>-altnum</samp>’</dt>
 <dd><p> Enables intel-style numeric-base suffixes (i.e. <code>0h</code>, <code>0b</code>).
-</p>
-</dd>
-
-<dt>‘<samp>-autoexp</samp>’</dt>
-<dd><p> Automatically export all non-local symbols, making them visible
- to other modules during linking.
 </p>
 </dd>
 
@@ -106,7 +99,7 @@ line must be separated from the label by whitespace or assignment operator (i.e.
 Additionally, terminating a label with a double colon (<code>::</code>)
 declares that label externally visible (see also <code>xdef</code>).
 </p>
-<p>Labels are declared as local when prefixed with ’<code>.</code>’ (’<code>@</code>’ when using the <code>-altlocal</code> option)
+<p>Labels are declared as local when prefixed with ’<code>@</code>’ (’<code>.</code>’ when using the <code>-altlocal</code> option)
 or when suffixed with ’<code>$</code>’. Additionally, label names cannot begin with a digit (0-9) as the first character.
 With respect to these restrictions, any alphanumeric character, including ’<code>_</code>’ is permitted.
 Local labels may be referenced anywhere in the scope between two global label declarations.
@@ -199,11 +192,11 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>&lt;symbol&gt; alias &lt;inernalsym&gt;</code></dt>
+<dt><code>&lt;symbol&gt; alias &lt;internalsym&gt;</code></dt>
 <dd><p>      Allows the programmer to asign an alternate name given by <code>&lt;symbol&gt;</code>
-	to the internal, reserved symbol specified <code>&lt;inernalsym&gt;</code>. Can also be used to
+	to the internal, reserved symbol specified <code>&lt;internalsym&gt;</code>. Can also be used to
 	reactivate internal symbol names that were deactivated by the <code>disable</code> directive; simply
-	do the following with an existing alias: <code>&lt;inernalsym&gt; alias &lt;symbol&gt;</code>.
+	do the following with an existing alias: <code>&lt;internalsym&gt; alias &lt;symbol&gt;</code>.
 </p>
 </dd>
 
@@ -262,6 +255,11 @@ CPU- and output-module allow it):
 	Useful for avoiding name conflicts with the programmer's own symbols. It is recommended, but not required,
 	that this directive is used in conjuction with the <code>alias</code> directive to assign the internal symbol
 	an alternate name by which it can be referenced at the programmer's discretion.
+</p>
+</dd>
+
+<dt><code>do</code></dt>
+<dd><p>      Invokes a do-until conditional loop block. See <code>until</code> for more information.
 </p>
 </dd>
 
@@ -331,17 +329,22 @@ CPU- and output-module allow it):
 </dd>
 
 <dt><code>endc/endif</code></dt>
-<dd><p>      Ends a block of conditional assembly.
+<dd><p>      Ends a block of conditional assembly. See <code>if</code> and <code>switch</code> for more information.
 </p>
 </dd>
 
 <dt><code>endm</code></dt>
-<dd><p>      Ends a macro definition.
+<dd><p>      Ends a macro definition. See <code>macro</code> for more information.
 </p>
 </dd>
 
 <dt><code>endr</code></dt>
-<dd><p>      Ends a repetition block.
+<dd><p>      Ends a repetition block. See <code>rept</code>, <code>irp</code>, and <code>irpc</code> for more information.
+</p>
+</dd>
+
+<dt><code>endw</code></dt>
+<dd><p>      Ends a while-loop block. See <code>while</code> for more information.
 </p>
 </dd>
 
@@ -354,28 +357,34 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>&lt;symbol&gt; equs &lt;string&gt;</code></dt>
-<dd><p>      Defines a new string symbol with the name <code>&lt;symbol&gt;</code> 
-	and assigns it a constant sting <code>&lt;string&gt;</code>. Like <code>equ</code>,
-	attempting to reassign the value of <code>&lt;symbol&gt;</code> will cause an error.
-	After the line of a string symbol declaration, the value of <code>&lt;string&gt;</code>
-	can be referenced anywhere in the code by enclosing the name <code>&lt;symbol&gt;</code> in
-	curly braces like so: <code>{&lt;symbol&gt;}</code>.</p><p>
-	Upon the assembler reading a line where <code>{&lt;symbol&gt;}</code> is present, all instances 
-	of <code>{&lt;symbol&gt;}</code> on that line will be replaced with the value of <code>&lt;string&gt;</code>. 
+<dt><code>&lt;strsym&gt; equs "&lt;string&gt;"</code></dt>
+<dt><code>&lt;strsym&gt; equs '&lt;string&gt;'</code></dt>
+<dt><code>&lt;strsym&gt; equs &lt;symbol&gt;</code></dt>
+<dd><p>      Defines a new string symbol with the name <code>&lt;strsym&gt;</code> 
+	and assigns it either a constant quoted string value (<code>&lt;string&gt;</code>) or
+	the string value assigned to an existing string symbol (<code>&lt;symbol&gt;</code>).
+	Unlike <code>equ</code>, it is possible to redefine the string value associated with <code>&lt;strsym&gt;</code>.</p><p>
+	After a string symbol has been declared, the string value of assigned to it can
+	can be referenced anywhere in the code, either by enclosing the name <code>&lt;strsym&gt;</code> in
+	curly braces (<code>{&lt;strsym&gt;}</code>) or by referencing it with a leading backslash (<code>\&lt;strsym&gt;</code>).
+	In instances were a leading backslash is used, a trailing backslash may also be used to separate <code>&lt;strsym&gt;</code>
+	from any trailing text that may confuse the string symbol expansion parser (<code>\&lt;strsym&gt;\</code>).</p><p>
+	As the assembler continues to read lines from the current source-file, any string symbol invocations present
+	on the current line will be replaced with the value of <code>&lt;string&gt;</code> or the string value that
+	was assigned to <code>&lt;symbol&gt;</code>. 
 	For example, if a symbol named <code>foo</code> is assigned a string value of <code>"bar"</code>, 
-	anywhere in the current source where <code>{foo}</code> is written will be pre-processed and 
-	interpreted as the text <code>bar</code> during assembly.</p>
+	anywhere in the current source where <code>{foo}</code>, <code>\foo</code>, or <code>\foo\</code> is written 
+	will be pre-processed and interpreted as the text <code>bar</code> during assembly.</p>
 <p>	As such, this line:</p>
 <div class="example">
-<pre class="example">{foo}:	dc.b	"{foo}"	; {foo}
+<pre class="example">\foo:	dc.b	"{foo}","\foo\foo","foo"
 </pre></div>
 <p>	Will be interpreted by the assembler as:</p>
 <div class="example">
-<pre class="example">bar:	dc.b	"bar"	; bar
+<pre class="example">bar:	dc.b	"bar","barfoo","foo"
 </pre></div>
-<p>		Due to the specific nature of its usage and application, the <code>&lt;string&gt;</code> value of a string 
-	symbol cannot be made externally visible or used in linkable objects beyond the source in which they were defined.
+<p>		Due to the specific nature of its usage and application, the string value associated with a string 
+	symbol is not made externally visible or used in linkable objects beyond the source in which they were defined.
 	However, source files that have been incorporated into the current source via the <code>include</code> directive 
 	are considered to be part of that current source, allowing usage of string symbols as intended within those files.
 	Attempting to export a string symbol will simply communicate that a symbol of that name has been defined somewhere 
@@ -568,17 +577,25 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>local &lt;macvar1&gt;[,&lt;macvar2&gt;...]</code></dt>
+<dd><p>      Defines a list of variables unique to the internal context of a macro. Macro variables
+	remain undefined until they are used by the programmer, allowing these variables to be used as lables
+	or any other type of symbol.
+</p>
+</dd>
+
 <dt><code>&lt;name&gt; macro [&lt;argname1&gt;[,&lt;argname2&gt;...]]</code></dt>
 <dd><p>		Defines a macro which can be referenced by <code>&lt;name&gt;</code>.
 	The macro definition is terminated by an <code>endm</code> directive. Up to 64
 	named arguments, separated by commas, may be defined for use within the macro 
-	context, wherein they must be precedded by a backslash like so: <code>\argname</code>.
-	The backslash character may be ommitted from the initial list of argument name 
-	definitions. However, named arguments are not required; in addition, up to 9 
-	arguments passed during a macro call can be referenced within the macro context as 
-	<code>\1</code> to <code>\9</code>. A special argument, <code>\0</code>, is set to 
-	the macro&rsquo;s first qualifier (dot size) when given on supported CPUs, 
-	such as the M68K. If you need to pass a macro argument which contains commas or spaces
+	context. It is recommened, but not required, to preceded precede named macro arguments
+	with a backslash character like so: <code>\argname</code>. An optional trailing backslash
+	may also be specified to separate the macro argument from any surrounding text: <code>\argname\</code>
+	In addition to named arguments, up to 9 numbered arguments passed during a macro call can be 
+	referenced within the macro context as <code>\1</code> to <code>\9</code>. 
+	A special argument, <code>\0</code>, is set to the macro&rsquo;s first qualifier 
+	(dot size) when given on supported CPUs, such as the M68K. 
+	If you need to pass a macro argument which contains commas or spaces
 	(i.e. a list of elements), you must enclose it between <code>{</code> and <code>}</code> 
 	characters. 
 
@@ -590,27 +607,33 @@ CPU- and output-module allow it):
       gets its own unique id.
 </p></dd>
 
-<dt><code>\#</code></dt>
-<dd><p>      Insert the number of arguments that have been passed to this macro call.
-      Note that the value this parameter evaluates to will not be affected by the 
-	  <code>shift</code> directive.
-</p></dd>
-
 <dt><code>\?n or \?argname</code></dt>
 <dd><p>      Inserts <code>1</code> (true) if the referenced macro argument (<code>argname</code>
 	 or <code>n</code>&rsquo;th unnamed argument) is non-blank; inserts <code>0</code> (false) otherwise.
 </p></dd>
 
-<dt><code>\&lt;symbolname&gt;</code></dt>
+<dt><code>\#symbolname</code></dt>
 <dd><p>      Inserts the current decimal value of the absolute
       symbol <code>symbolname</code>.
 </p></dd>
 
-<dt><code>\&lt;$symbolname&gt;</code></dt>
+<dt><code>\$symbolname</code></dt>
 <dd><p>      Inserts the current hexadecimal value of the absolute
       symbol <code>symbolname</code>, without leading <code>$</code>.
 </p></dd>
 </dl>
+
+<dt><code>&lt;name&gt; macros [&lt;argname1&gt;[,&lt;argname2&gt;...]]</code></dt>
+<dd><p>      Short macro declaration. Declares a single-line macro definition with no need for a 
+	corresponding <code>endm</code> directive. Useful for modeling directives from other assemblers
+	or psuedo-instructions.
+</p>
+<p>		Example:
+</p><div class="example">
+<pre class="example">define	macros	name, text	; short macro to immitate a C-like define directive</pre>
+<pre class="example">	\name:	equs	"\text"	; no 'endm' needed after this; the short macro definition terminates after this line is read</pre>
+</div>
+</dd>
 
 <dt><code>mexit</code></dt>
 <dd><p>      Leave the current macro and continue with assembling the parent
@@ -638,6 +661,50 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
+<dt><code>opt &lt;option1&gt;[,&lt;option2&gt;...]</code></dt>
+<dd><p>      Syntax options directive. Allows the user to specify a list of syntax options and their state from that point forward.
+	Listing the code followed by a <code>'+'</code> will set the option to on, while specifying a <code>'-'</code> will set it to off.
+	<code>'+'</code> and <code>'-'</code> have special meanings in the case of the <code>l</code> option, which is elaborated upon
+	in the list below.
+</p>
+<p>      Option Codes:
+</p><dl compact="compact">
+<dt><code>ae</code></dt>
+<dd><p>         Automatic Even - Specifies whether data declaration or offset directives are automatically aligned to the architecture’s
+	natural alignment. The default setting is <code>ae+</code> unless the <code>-noalign</code> build option was given.
+</p>
+</dd>
+<dt><code>an</code></dt>
+<dd><p>         Alternate Numeric - Specifies whether intel-style numeric suffixes are accepted for hexadecimal, octal, or binary numbers
+	The default setting is <code>an-</code> unless the <code>-altnum</code> build option was given.
+</p>
+</dd>
+<dt><code>c</code></dt>
+<dd><p>          Case Sensitivity - Specifies symbol names are case-sensitive.
+	The default setting is <code>c+</code> unless the <code>-nocase</code> build option was given.
+</p>
+</dd>
+<dt><code>l</code></dt>
+<dd><p>         Local Symbol Character - Specifies the character for prefixed local symbols to use.
+	<code>'+'</code> corresponds to <code>'.'</code>, while <code>'-'</code> corresponds to <code>'@'</code>.
+	If desired, an arbitary character can be specified in place of the on/off signifier. For instance, if
+	<code>l?</code> is given, this will change the prefixed local symbol character to <code>'?'</code>. Be mindful
+	that use of this may have unintended effects and, as such, should be used with care.
+	The default setting is <code>l-</code> unless the <code>-altlocal</code> build option was given.
+</p>
+</dd>
+<dt><code>w</code></dt>
+<dd><p>         Print Warning Messages - Specifies whether or not the assembler should print warning messages.
+	The default setting is <code>w+</code> unless the <code>-w</code> build option was given.
+</p>            
+</dd>
+<dt><code>ws</code></dt>
+<dd><p>         Allow Whitespace - Specifies whether or not to allow white-space characters in operands and expressions.
+	The default setting is <code>ws-</code> unless the <code>-spaces</code> build option was given.
+</p>            
+</dd>
+</dl>
+
 <dt><code>org &lt;expression&gt;</code></dt>
 <dd><p>      Set the base address for the subsequent code to <code>&lt;expression&gt;</code>.
 </p>
@@ -653,6 +720,22 @@ CPU- and output-module allow it):
 <dt><code>purge &lt;macro&gt;[,&lt;macro&gt;...]</code></dt>
 <dd><p>      Undefine one or more already defined macros, making them unknown for
       the following source to assemble.
+</p>
+</dd>
+
+<dt><code>pusho/popo</code></dt>
+<dd><p>     Options stack directives. <code>pusho</code> pushes the current syntax options onto an 
+	internal stack, where they may be restored by a corresponding <code>popo</code> directive at a later time.
+</p>
+</dd>
+
+<dt><code>pushp "&lt;string&gt;"</code></dt>
+<dt><code>pushp '&lt;string&gt;'</code></dt>
+<dt><code>pushp &lt;strsym&gt;</code></dt>
+<dt><code>popp &lt;strsym&gt;</code></dt>
+<dd><p>     String stack directives. <code>pushp</code> pushes the string value specified by
+	<code>&lt;string&gt;</code> or <code>&lt;strsym&gt;</code> onto an internal stack. <code>popp</code> can
+	then be used to assign previously pushed values to the existing string symbol <code>&lt;strsym&gt;</code>.
 </p>
 </dd>
 
@@ -672,10 +755,7 @@ CPU- and output-module allow it):
 <dt><code>rept &lt;expression&gt;</code></dt>
 <dd><p>      Repeats the assembly of the block between <code>rept</code> and <code>endr</code>
       <code>&lt;expression&gt;</code> number of times. <code>&lt;expression&gt;</code> should be
-      positive. Negative values are regarded like <code>0</code>.
-      The internal symbol <code>__REPTN</code> always holds the iteration counter
-      of the inner repeat loop, starting with 0. <code>__REPTN</code> is -1 outside
-      of any repeat block.
+      positive. Negative values are equivalent to specifying a repeat value of <code>0</code>.
 </p>
 </dd>
 
@@ -805,17 +885,52 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>switch &lt;exp&gt;</code></dt>
+<dt><code>&lt;strsym&gt; substr &lt;start&gt;,&lt;end&gt;,"&lt;string&gt;"</code></dt>
+<dt><code>&lt;strsym&gt; substr &lt;start&gt;,&lt;end&gt;,'&lt;string&gt;'</code></dt>
+<dt><code>&lt;strsym&gt; substr &lt;start&gt;,&lt;end&gt;,&lt;symbol&gt;</code></dt>
+<dd><p>      Declares and assigns a string value to <code>&lt;strsym&gt;</code> based on a sub-string derived
+	from <code>&lt;string&gt;</code> or <code>&lt;symbol&gt;</code> between the character indexes 
+	<code>&lt;start&gt;</code> and <code>&lt;end&gt</code>. both <code>&lt;start&gt;</code> and 
+	<code>&lt;end&gt</code> can optionally be left blank. If <code>&lt;start&gt;</code> is left blank
+	sub-string parsing begins at the first character of the given string. If <code>&lt;end&gt</code> is
+	left blank, parsing ends after the last character of the string. Any value between <code>0</code> and the
+	length of the string is accepted as long as the value of <code>&lt;end&gt</code> is greater 
+	than <code>&lt;start&gt;</code>.
+	</p>
+<p>	Example:</p>
+<div class="example">
+<pre class="example">part:	substr	10,19,"The quick brown fox jumps over the lazy dog"	; Assigns the sub-string value "brown fox" to 'part'
+</pre></div>
+</dd>
+
+<dt><code>switch &lt;expression&gt</code></dt>
 <dd><p>      Begins a switch statement block of conditional assembly. Unlike conditional blocks consisting of 
 	<code>if</code>, <code>else</code>, and <code>elseif</code>, a <code>switch</code> block conditionally 
-	assembles code based on whether or not an initial expression, given by <code>&lt;exp&gt;</code>, matches the 
+	assembles code based on whether or not an initial expression, given by <code>&lt;expression&gt</code>, matches the 
 	value of any cases specified between the <code>switch</code> and <code>endc/endif</code> directive. Specific 
-	cases can be checked through the <code>case</code> directive; if <code>&lt;exp&gt;</code> matches the value
+	cases can be checked through the <code>case</code> directive; if <code>&lt;expression&gt</code> matches the value
 	of an expression listed following <code>case</code>, all lines of code following the matched case will be 
-	assembled until another case sub-block is encountered. If <code>&lt;exp&gt;</code> matches multiple listed
+	assembled until another case sub-block is encountered. If <code>&lt;expression&gt</code> matches multiple listed
 	cases within the switch statement, only the first matched case sub-block will be conditionally assembled; 
 	the rest will be ignored. <code>default</code> (or alternatively, <code>else</code>) functions as a special 
-	case which will be assembled if no previously listed case matched <code>&lt;exp&gt;</code>.
+	case which will be assembled if no previously listed case matched <code>&lt;expression&gt</code>.
+</p>
+</dd>
+
+<dt><code>until &lt;expression&gt;</code></dt>
+<dd><p>      Do-until loop closure directive. Repeats the code between <code>do</code> and <code>until</code> until
+      <code>&lt;expression&gt;</code> evaluates as <code>true</code>. To prevent infinite loops, a default maximum of
+			10,000 iterations is permitted. When this ammount is exceeded, the assembler will produce an error. This amount 
+			can be raised or lowered with the <code>-maxloopiters=</code> build option, where an integer value specified after
+			the <code>=</code> specifies the maximum allowed number of iterations. Specifying a value of <code>0</code> will
+			effectively remove the iteration limit, but will allow for the possibility of infite loops.
+</p>
+</dd>
+
+<dt><code>while &lt;expression&gt;</code></dt>
+<dd><p>      While-loop opening directive. Repeats the code between <code>while</code> and <code>endw</code> while
+      <code>&lt;expression&gt;</code> evaluates as <code>true</code>. To prevent infinite loops, a default maximum of
+			10,000 iterations is permitted. See <code>until</code> above for information on how to adjust this limit.
 </p>
 </dd>
 
@@ -932,6 +1047,18 @@ point3
 </li><li>- 1024: enclosed macro argument missing "}"
 </li><li>- 1025: invalid "public" parameter (must be either "on" or "off")
 </li><li>- 1026: invalid data size value (%d bytes)
+</li><li>- 1027: local macro variable <%s> already declared
+</li><li>- 1028: string symbol <%s> not found
+</li><li>- 1029: quoted string or string symbol expected in operand
+</li><li>- 1030: substring index must be positive
+</li><li>- 1031: substring ending index cannot be greater than the starting index
+</li><li>- 1032: substring ending index cannot be greater than the length of the string
+</li><li>- 1033: string stack capacity reached (%d)
+</li><li>- 1034: string stack is empty
+</li><li>- 1035: invalid option argument \"%c\"
+</li><li>- 1036: unrecognized option given
+</li><li>- 1037: options stack capacity reached (%d)
+</li><li>- 1038: options stack is empty
 
 </li></ul>
 
