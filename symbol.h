@@ -89,6 +89,7 @@ symbol *new_labsym(section *,const char *);
 symbol *new_tmplabel(section *);
 symbol *internal_abs(const char *);
 expr *set_internal_abs(const char *,taddr);
+int undef_internal_sym(const char *,int);
 
 #ifdef HAVE_REGSYMS
 void add_regsym(regsym *);
