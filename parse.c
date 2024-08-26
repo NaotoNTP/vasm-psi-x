@@ -1294,7 +1294,7 @@ char *read_next_line(void)
       nc = expand_macro(cur_src,&s,d,len);  /* try macro arg. expansion */
 
     if (nc == 0)
-      nc = expand_ctrlchars(cur_src,&s,d,len); /* try control character expansion */
+      nc = expand_ctrlparams(cur_src,&s,d,len); /* try control character expansion */
 
     if (nc > 0) {
       /* expanded macro arguments or control characters */

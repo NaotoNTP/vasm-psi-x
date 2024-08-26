@@ -234,6 +234,7 @@ int syntax_defsect(void);
 void parse(void);
 char *parse_macro_arg(struct macro *,char *,struct namelen *,struct namelen *);
 int expand_macro(source *,char **,char *,int);
+int expand_ctrlparams(source *,char **,char *,int);
 char *skip(char *);
 void eol(char *);
 char *const_prefix(char *,int *);

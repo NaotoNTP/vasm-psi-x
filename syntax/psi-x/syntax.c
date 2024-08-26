@@ -2644,7 +2644,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
   return nc;  /* number of chars written to line buffer, -1: out of space */
 }
 
-int expand_ctrlchars(source *src,char **line,char *d,int dlen)
+int expand_ctrlparams(source *src,char **line,char *d,int dlen)
 {
   symbol *sym;
   int nc = 0;
