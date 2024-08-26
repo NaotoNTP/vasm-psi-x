@@ -1,0 +1,50 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-ubuntu:
+    name: Compile Linux Binaries
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: configure
+      run: ./configure
+    - name: Make M68K
+      run: make CPU=m68k SYNTAX=psi-x
+    - name: Make Z80
+      run: make CPU=z80 SYNTAX=psi-x
+    - name: Make 6502
+      run: make CPU=6502 SYNTAX=psi-x
+
+  build-windows:
+    name: Compile Windows Binaries
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: configure
+      run: ./configure
+    - name: Make M68K
+      run: make CPU=m68k SYNTAX=psi-x
+    - name: Make Z80
+      run: make CPU=z80 SYNTAX=psi-x
+    - name: Make 6502
+      run: make CPU=6502 SYNTAX=psi-x
+
+  build-macos:
+    name: Compile MacOS Binaries
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: configure
+      run: ./configure
+    - name: Make M68K
+      run: make CPU=m68k SYNTAX=psi-x
+    - name: Make Z80
+      run: make CPU=z80 SYNTAX=psi-x
+    - name: Make 6502
+      run: make CPU=6502 SYNTAX=psi-x
