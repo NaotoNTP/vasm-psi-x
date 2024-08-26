@@ -24,8 +24,8 @@ jobs:
         mv vasmz80_psi-x artifacts
         mv vasm6502_psi-x artifacts
 
-    - name: Upload Ubuntu Binaries as Artifacts
-    - uses: actions/upload-artifact@v4
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v4.3.6        
         with: 
           name: ubuntu-builds
           path: artifacts
