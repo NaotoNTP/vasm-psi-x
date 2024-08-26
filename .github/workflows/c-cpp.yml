@@ -18,13 +18,14 @@ jobs:
       run: make CPU=z80 SYNTAX=psi-x
     - name: Make 6502
       run: make CPU=6502 SYNTAX=psi-x
+    - name: Make Artifacts Directory
       run: |
         mkdir artifacts
         mv vasmm68k_psi-x artifacts
         mv vasmz80_psi-x artifacts
         mv vasm6502_psi-x artifacts
 
-    - name: Upload a Build Artifact
+    - name: Upload Ubuntu Binaries as Artifacts
       uses: actions/upload-artifact@v4.3.6        
       with: 
         name: ubuntu-builds
