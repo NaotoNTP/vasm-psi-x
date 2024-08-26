@@ -59,26 +59,12 @@ make CPU=m68k SYNTAX=psi-x
 ### Available CPU modules
 
 * 6502
-* 6800
-* 6809
 * arm
-* c16x
-* jagrisc
 * m68k
-* pdp11
-* ppc
-* qnice
-* test
-* tr3200
-* vidcore
-* x86
 * z80
+* test
 
 ### Available Syntax modules
 
 * psi-x
-* std
-* madmac
-* mot
-* oldstyle
 * test
