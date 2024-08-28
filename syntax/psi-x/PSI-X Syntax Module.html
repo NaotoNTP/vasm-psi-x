@@ -388,8 +388,11 @@ CPU- and output-module allow it):
 	However, source files that have been incorporated into the current source via the <code>include</code> directive 
 	are considered to be part of that current source, allowing usage of string symbols as intended within those files.
 	Attempting to export a string symbol will simply communicate that a symbol of that name has been defined somewhere 
-	in the source. Attempting to reference a string symbol as though it were a standard symbol evaluates to a constant 
-	value of <code>0</code>.
+	in the source.</p>
+<p>		Referencing a string symbol as though it were a standard symbol, without slashes or curly braces within
+	the context of an expression, evaluates to the assigned string's length. For example,	a string symbol that has been assigned 
+	the phrase <code>"Hello world!"</code> will evaluate to a value of <code>12</code>. This property may be useful in
+	situations where manually calculating the length of an assigned string would negatively impact the readability of the code.
 </p>
 </dd>
 
