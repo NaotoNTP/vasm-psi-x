@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module 1.0.1 (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.0.2 (c) 2024 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -84,7 +84,7 @@ static struct options {
 } options = {
   1,      /* AE - Automatic Even */
   0,      /* AN - Alternate Numeric */
-  1,      /* C - Case Sensitivity */
+  0,      /* C - Case Sensitivity */
   '@',    /* L - Local Label Signifier */
   1,      /* W - Print Warning Messages */
   0,      /* WS - Allow White Spaces */
@@ -1617,7 +1617,7 @@ static void handle_opt(char *s)
     else if (!strnicmp(s,"c",1)) {
       s++;
       if ((arg = read_opt_arg(s)) != -1)
-        nocase = options.c = arg;
+        nocase = (options.c = arg) ? 0 : 1;
       else
         syntax_error(34,*s);
       s++;
@@ -2754,6 +2754,9 @@ int init_syntax()
   if (debug && dirhash->collisions)
     fprintf(stderr,"*** %d directive collisions!!\n",dirhash->collisions);
 
+  options.c = (nocase) ? 0 : 1;
+  options.w = (no_warn) ? 0 : 1;
+
   cond_init();
   set_internal_abs(REPTNSYM,-1); /* reserve the REPTN symbol */
   
@@ -2768,8 +2771,6 @@ int init_syntax()
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
   esc_sequences = 0;
-  nocase = options.c;
-  no_warn = (options.w) ? 0 : 1;
   
   /*
    * Date & Time Constant Definitions 
