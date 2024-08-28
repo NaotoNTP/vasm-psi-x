@@ -103,7 +103,7 @@ static expr *primary_expr(void)
     if(!sym)
       sym=new_import(buf->str);
     sym->flags|=USED;
-    new=(sym->type!=EXPRESSION)?new_sym_expr(sym):copy_tree(sym->expr);
+    new=((sym->type!=EXPRESSION)||(sym->type!=STRSYM))?new_sym_expr(sym):copy_tree(sym->expr);
     return new;
   }
   m=const_prefix(s,&base);
@@ -218,7 +218,7 @@ static expr *primary_expr(void)
       sym=new_import(buf->str);
     }
     sym->flags|=USED;
-    new=(sym->type!=EXPRESSION)?new_sym_expr(sym):copy_tree(sym->expr);
+    new=((sym->type!=EXPRESSION)||(sym->type!=STRSYM))?new_sym_expr(sym):copy_tree(sym->expr);
     return new;
   }
   if(*s=='\''||*s=='\"'){
@@ -601,7 +601,7 @@ int type_of_expr(expr *tree)
     if(tree->c.sym->flags&INEVAL)
       general_error(18,tree->c.sym->name);
     tree->c.sym->flags|=INEVAL;
-    ltype=tree->c.sym->type==EXPRESSION?type_of_expr(tree->c.sym->expr):NUM;
+    ltype=((tree->c.sym->type==EXPRESSION)||(tree->c.sym->type==STRSYM))?type_of_expr(tree->c.sym->expr):NUM;
     tree->c.sym->flags&=~INEVAL;
     return ltype;
   }else if(ltype==NUM||ltype==HUG||ltype==FLT)
@@ -924,7 +924,7 @@ void simplify_expr(expr *tree)
   }
 #endif  /* FLOAT_PARSER */
   else{
-    if(tree->type==SYM&&tree->c.sym->type==EXPRESSION){
+    if(tree->type==SYM&&((tree->c.sym->type==EXPRESSION)||(tree->c.sym->type==STRSYM))) {
       switch(tree->c.sym->expr->type){
       case NUM:
         ival=tree->c.sym->expr->c.val;
@@ -1102,7 +1102,7 @@ int eval_expr(expr *tree,taddr *result,section *sec,taddr pc)
     break;
   case SYM:
     lsym=tree->c.sym;
-    if(lsym->type==EXPRESSION){
+    if ((lsym->type==EXPRESSION)||(lsym->type==STRSYM)) {
       if(lsym->flags&INEVAL)
         general_error(18,lsym->name);
       lsym->flags|=INEVAL;
@@ -1240,7 +1240,7 @@ int eval_expr_huge(expr *tree,thuge *result)
     val=huge_from_int(BOOLEAN(hcmp(lval,rval)==0));
     break;
   case SYM:
-    if(tree->c.sym->type==EXPRESSION){
+    if ((tree->c.sym->type==EXPRESSION)||(tree->c.sym->type==STRSYM)) {
       int ok;
       if(tree->c.sym->flags&INEVAL)
         general_error(18,tree->c.sym->name);
@@ -1329,7 +1329,7 @@ int eval_expr_float(expr *tree,tfloat *result)
     val=BOOLEAN(lval==rval);
     break;
   case SYM:
-    if(tree->c.sym->type==EXPRESSION){
+    if ((tree->c.sym->type==EXPRESSION)||(tree->c.sym->type==STRSYM)) {
       int ok;
       if(tree->c.sym->flags&INEVAL)
         general_error(18,tree->c.sym->name);
@@ -1384,7 +1384,7 @@ static int _find_base(expr *p,symbol **base,section *sec,taddr pc)
 #endif
   if(p->type==SYM){
     update_curpc(p,sec,pc);
-    if(p->c.sym->type==EXPRESSION)
+    if ((p->c.sym->type==EXPRESSION)||(p->c.sym->type==STRSYM))
       return _find_base(p->c.sym->expr,base,sec,pc);
     else{
       if(base)

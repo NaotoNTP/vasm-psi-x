@@ -526,7 +526,7 @@ symbol *new_strsym(char *name,char *text)
 
   new->type = STRSYM;
   new->sec = 0;
-	new->expr = number_expr(0);
+	new->expr = number_expr(strlen(text));
   new->text = mystrdup(text);
 
   if (add) {

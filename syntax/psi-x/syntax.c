@@ -2682,7 +2682,7 @@ int expand_ctrlparams(source *src,char **line,char *d,int dlen)
       s++;
       
       if (name = parse_symbol(&s)) {
-        if ((sym = find_symbol(name)) && sym->type==EXPRESSION) {
+        if ((sym = find_symbol(name)) && ((sym->type == EXPRESSION) || (sym->type == STRSYM))) {
           if (eval_expr(sym->expr,&val,NULL,0)) {
             if (dlen > 9)
               nc = sprintf(d,fmt,(unsigned long)(uint32_t)val);

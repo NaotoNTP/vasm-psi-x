@@ -698,7 +698,7 @@ taddr get_sym_value(symbol *s)
   else if (s->type == LABSYM) {
     return s->pc;
   }
-  else if (s->type == EXPRESSION) {
+  else if ((s->type == EXPRESSION) || (s->type == STRSYM)) {
     if (s->expr) {
       taddr val;
 
