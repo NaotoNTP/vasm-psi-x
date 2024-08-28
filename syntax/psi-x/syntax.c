@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module 1.0 (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module 1.0.1 (c) 2024 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -408,7 +408,7 @@ char *find_macvar(source *src,char *name,size_t len)
   struct macarg *macvar;
 
   if (src->macro != NULL) {
-    for (macvar = src->irpvals; macvar != NULL ; macvar = macvar->argnext) {
+    for (macvar = src->varnames; macvar != NULL ; macvar = macvar->argnext) {
       /* @@@ case-sensitive comparison? */
       if (macvar->arglen == len && strncmp(macvar->argname,name,len) == 0) {
         return macvar->argname;
@@ -1338,7 +1338,7 @@ static void handle_local(char *s)
       found = find_macvar(src,name->str,name->len);
 
       if (found == NULL)
-        addmacarg(&src->irpvals,name->str,name->str+name->len);
+        addmacarg(&src->varnames,name->str,name->str+name->len);
       else
         syntax_error(26,name->str);  /* local macro variable already declared */
 

@@ -42,6 +42,7 @@ struct source {
   int num_params;
   char *param[MAXMACPARAMS+1];
   int param_len[MAXMACPARAMS+1];
+  struct macarg *varnames;
 #if MAX_QUALIFIERS > 0
   int num_quals;
   char *qual[MAX_QUALIFIERS];
@@ -61,6 +62,7 @@ struct source {
 #ifdef REPTNSYM
   long reptn;
 #endif
+
 };
 
 #define DEPEND_LIST     1
