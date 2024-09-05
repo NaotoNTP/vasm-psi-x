@@ -105,9 +105,10 @@ With respect to these restrictions, any alphanumeric character, including ’<co
 Local labels may be referenced anywhere in the scope between two global label declarations.
 </p>
 <p>It is possible to refer to any local label/symbol in the source by preceding its
-name with the global label (aka parent label) it belongs to with a separating colon character like so:
-<code>global_name:local_name</code>. This is not generally recommended for referencing labels in code; rather,
-it is best to reserve this practice for referencing fields within a structure (see also <code>struct</code>).
+name with the global label (aka parent label) it belongs to with a separating colon or dot character like so:
+<code>global_name:local_name</code> or <code>global_name.local_name</code>. This is not generally recommended 
+for referencing labels in code; rather, it is best to reserve this practice for referencing fields within 
+a structure (see also <code>struct</code>).
 </p>
 <p>Anonymous labels are also supported. They are declared with a single ’<code>:</code>’
 at the beginning of a line. They may be referenced by ’<code>:</code>’ followed
@@ -978,9 +979,9 @@ z	dc.b	6
 
 <p>This will create the following labels:
 </p><div class="example">
-<pre class="example">point:x  ; 0   offsets
-point:y  ; 1
-point:z  ; 2
+<pre class="example">point.x  ; 0   offsets
+point.y  ; 1
+point.z  ; 2
 point    ; 3   size of the structure
 </pre></div>
 

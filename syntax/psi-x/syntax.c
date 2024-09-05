@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.0.2 (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.0 (c) 2024 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -145,7 +145,7 @@ int isidchar(char c)
 #if defined(VASM_CPU_M68K)
 char *chkidend(char *start,char *end)
 {
-  if (dot_idchar && (end-start)>2 && *(end-2)=='.') {
+  if ((end-start)>2 && *(end-2)=='.') {
     char c = tolower((unsigned char)*(end-1));
 
     if (c=='b' || c=='w' || c=='l')
@@ -341,10 +341,13 @@ char *const_suffix(char *start,char *end)
 
 static char *skip_local(char *p)
 {
+  char *s;
+
   if (ISIDSTART(*p) || isdigit((unsigned char)*p)) {  /* may start with digit */
-    p++;
+    s = p++;
     while (ISIDCHAR(*p))
       p++;
+    p = CHKIDEND(s,p);
   }
   else
     p = NULL;
@@ -362,7 +365,7 @@ strbuf *get_local_label(int n,char **start)
   s = *start;
   p = skip_local(s);
 
-  if (p!=NULL && *p==':' && ISIDSTART(*s) && *s!=options.l && *(p-1)!='$') {
+  if (p!=NULL && (*p==':' || *p=='.') && ISIDSTART(*s) && *s!=options.l && *(p-1)!='$') {
     /* skip local part of global.local label */
     s = p + 1;
     if (p = skip_local(s)) {
