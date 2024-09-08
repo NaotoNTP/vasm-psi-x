@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.0 (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.1 (c) 2024 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -368,7 +368,13 @@ strbuf *get_local_label(int n,char **start)
   if (p!=NULL && (*p==':' || *p=='.') && ISIDSTART(*s) && *s!=options.l && *(p-1)!='$') {
     /* skip local part of global.local label */
     s = p + 1;
+
     if (p = skip_local(s)) {
+      char c = tolower((unsigned char)*s);
+      
+      if ((p-s == 1) && (c == 'b' || c == 'w' || c == 'l'))
+        return NULL;
+      
       name = make_local_label(n,*start,(s-1)-*start,s,*(p-1)=='$'?(p-1)-s:p-s);
       *start = skip(p);
     }
