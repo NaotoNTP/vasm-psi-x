@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.1 (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.2-pre (c) 2024 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -2585,6 +2585,10 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         s = end;
       }
     }
+    else {
+      s--;
+      return 0;
+    }
 
     /* skip terminating '\' if present */
     if (*s == '\\')
@@ -2623,6 +2627,10 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         }
       }
     }
+    else {
+      s--;
+      return 0;
+    }
 
     if (nc >= dlen)
       nc = -1;
@@ -2641,6 +2649,12 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     else if ((varname = find_macvar(src,s,end-s)) != NULL) {
       /* varname: insert local macro variable */
       nc = sprintf(d,"%s_%lu$",varname,src->id);
+      s = end;
+    }
+    else {
+      strbuf *name = parse_identifier(0,&s);
+
+      nc = sprintf(d,"%s",name->str);
       s = end;
     }
 
@@ -2715,6 +2729,10 @@ int expand_ctrlparams(source *src,char **line,char *d,int dlen)
         nc = sprintf(d,sym->text);
       }
     }
+    else {
+      s--;
+      return 0;
+    }
 
     /* skip terminating '\' if present */
     if (*s == '\\')
@@ -2734,6 +2752,10 @@ int expand_ctrlparams(source *src,char **line,char *d,int dlen)
         nc = sprintf(d,sym->text);
         s++;
       }
+    }
+    else {
+      s--;
+      return 0;
     }
 
     if (nc >= dlen)
