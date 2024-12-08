@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.2-pre (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.2 (c) 2024 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -77,7 +77,7 @@ static int dot_idchar;
 static struct options {
   int ae;   /* AE - Automatic Even */
   int an;   /* AN - Alternate Numeric */
-  int	c;    /* C - Case Sensitivity */
+  int  c;    /* C - Case Sensitivity */
   char l;   /* L - Local Label Signifier */
   int w;    /* W - Print warning messages */
   int ws;   /* WS - Allow white spaces */
@@ -1708,7 +1708,9 @@ struct {
   "equs",handle_absentid,
   "macro",handle_absentid,
   "macros",handle_absentid,
+#if !defined(VASM_CPU_Z80)
   "set",handle_absentid,
+#endif
   "struct",handle_absentid,
   "substr",handle_absentid,
 
@@ -2133,11 +2135,13 @@ void parse(void)
         label = new_equate(labname,parse_expr_tmplab(&s));
         label->flags |= symflags;
       }
+    #if !defined(VASM_CPU_Z80)
       else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
         /* set allows redefinitions */
         s = skip(s+3);
         label = new_abs(labname,parse_expr_tmplab(&s));
       } 
+    #endif
       else if (*s=='=') {
         s++;
         if (*s=='=') {
@@ -2639,7 +2643,7 @@ int expand_macro(source *src,char **line,char *d,int dlen)
   }
   else if ((end = skip_identifier(s)) != NULL) {
   /* possible named macro argument or variable expansion detected (without leading '\') */
-		char *varname;
+    char *varname;
 
     if ((n = find_macarg_name(src,s,end-s)) >= 0) {
       /* argname: insert named macro parameter n */
@@ -2669,11 +2673,11 @@ int expand_macro(source *src,char **line,char *d,int dlen)
 
 int expand_ctrlparams(source *src,char **line,char *d,int dlen)
 {
-  symbol *sym;
+  symbol *sym, *shift = internal_abs(CARGSYM);
   int nc = 0;
   int n;
   char *s = *line;
-  char *name;
+  char *name, *end;
 
   if (*s == '\\') {
     /* possible control character or symbolic expansion detected */
@@ -2704,7 +2708,29 @@ int expand_ctrlparams(source *src,char **line,char *d,int dlen)
       fmt = (*s == '$') ? "%lX" : "%lu";
       s++;
       
-      if (name = parse_symbol(&s)) {
+      /* check if we're numerically expanding a local macro variable */
+      if ((src->macro != NULL) && ((end = skip_identifier(s)) != NULL) && ((name = find_macvar(src,s,end-s)) != NULL)) {
+        char *t = d;
+        nc = sprintf(d,"%s_%lu$",name,src->id);
+
+        if (name = parse_symbol(&t)) {
+          if ((sym = find_symbol(name)) && ((sym->type == EXPRESSION) || (sym->type == STRSYM))) {
+            if (eval_expr(sym->expr,&val,NULL,0)) {
+              if (dlen > 9) {
+                nc = sprintf(d,fmt,(unsigned long)(uint32_t)val);
+                s = end;
+              }
+              else
+                nc = -1;
+            }
+          }
+          if (nc <= 0) {
+            syntax_error(22);  /* invalid numeric expansion */
+            return 0;
+          }
+        }
+      }
+      else if (name = parse_symbol(&s)) {
         if ((sym = find_symbol(name)) && ((sym->type == EXPRESSION) || (sym->type == STRSYM))) {
           if (eval_expr(sym->expr,&val,NULL,0)) {
             if (dlen > 9)
