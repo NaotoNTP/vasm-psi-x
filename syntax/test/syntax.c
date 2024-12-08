@@ -410,7 +410,7 @@ int expand_ctrlparams(source *src,char **line,char *d,int dlen)
   return 0;
 }
 
-int init_syntax()
+int init_syntax(void)
 {
   size_t i;
   hashdata data;

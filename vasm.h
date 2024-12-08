@@ -1,5 +1,5 @@
 /* vasm.h  main header file for vasm */
-/* (c) in 2002-2023 by Volker Barthelmann */
+/* (c) in 2002-2024 by Volker Barthelmann */
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -20,6 +20,7 @@ typedef struct source source;
 typedef struct listing listing;
 typedef struct regsym regsym;
 typedef struct strsym strsym;
+typedef struct rlist rlist;
 
 typedef struct strbuf {
   size_t size;
@@ -28,7 +29,7 @@ typedef struct strbuf {
 } strbuf;
 #define STRBUFINC 0x100
 
-#define MAXPADBYTES 8  /* max. pattern size to pad alignments */
+#define MAXPADSIZE 8  /* max. pattern size to pad alignments */
 
 #include "cpu.h"
 #include "symbol.h"
@@ -49,6 +50,10 @@ typedef struct strbuf {
 
 #if !defined(BIGENDIAN)&&defined(LITTLEENDIAN)
 #define BIGENDIAN (!LITTLEENDIAN)
+#endif
+
+#if !defined(BITSPERBYTE)
+#define BITSPERBYTE 8
 #endif
 
 #ifndef MNEMONIC_VALID
@@ -106,10 +111,10 @@ struct section {
   atom *first;
   atom *last;
   taddr align;
-  uint8_t pad[MAXPADBYTES];
+  uint8_t pad[MAXPADSIZE];
   int padbytes;
   uint32_t flags;
-  uint32_t memattr;  /* type of memory, used by some object formats */
+  taddr memattr;  /* type of memory, used by some object formats */
   taddr org;
   taddr pc;
   unsigned long idx; /* usable by output module */
@@ -144,20 +149,23 @@ extern struct stabdef *first_nlist,*last_nlist;
 extern char emptystr[];
 extern char vasmsym_name[];
 
+extern int octetsperbyte,output_bitsperbyte,output_bytes_le,input_bytes_le;
 extern unsigned long long taddrmask;
-#define ULLTADDR(x) (((unsigned long long)x)&taddrmask)
 extern taddr taddrmin,taddrmax;
+#define ULLTADDR(x) (((unsigned long long)x)&taddrmask)
+#define ULLTVAL(x) ((unsigned long long)((utaddr)(x)))
 
 /* provided by main assembler module */
 extern int debug;
 
 void leave(void);
+void set_taddr(void);
 void set_section(section *);
-section *new_section(char *,char *,int);
+section *new_section(const char *,const char *,int);
 section *new_org(taddr);
 section *find_section(const char *,const char *);
-void switch_section(char *,char *);
-void switch_offset_section(char *,taddr);
+void switch_section(const char *,const char *);
+void switch_offset_section(const char *,taddr);
 void add_align(section *,taddr,expr *,int,unsigned char *);
 section *default_section(void);
 void push_section(void);
@@ -195,11 +203,18 @@ void disable_warning(int);
 #define ierror(x) general_error(4,(x),__LINE__,__FILE__)
 
 /* provided by cpu.c */
-extern int bitsperbyte,bytespertaddr;
+extern int bytespertaddr;
 extern const int mnemonic_cnt;
 extern mnemonic mnemonics[];
 extern const char *cpu_copyright;
 extern const char *cpuname;
+
+/* convert target-bytes into the host's 8-bit bytes */
+#if BITSPERBYTE == 8
+#define OCTETS(n) (n)
+#else
+#define OCTETS(n) ((n)*octetsperbyte)
+#endif
 
 int init_cpu(void);
 int cpu_args(char *);
@@ -246,7 +261,8 @@ strbuf *get_local_label(int,char **);
 extern int tos_hisoft_dri;
 #endif
 #ifdef OUTHUNK
-extern int hunk_onlyglobal;
+extern int hunk_xdefonly;
+extern int hunk_devpac;
 #endif
 
 int init_output_test(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
@@ -264,3 +280,5 @@ int init_output_cdef(char **,void (**)(FILE *,section *,symbol *),int (**)(char 
 int init_output_ihex(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
 int init_output_o65(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
 int init_output_woz(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
+int init_output_pap(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
+int init_output_hans(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));

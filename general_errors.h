@@ -13,7 +13,7 @@
   "could not open <%s> for input",ERROR|FATAL,
   "could not open <%s> for output",NOLINE|ERROR|FATAL,
   "unknown option <%s>",NOLINE|ERROR,
-  "",NOLINE|ERROR|FATAL,                                        /* 15 */
+  "%s module doesn't support %d-bit bytes",NOLINE|ERROR|FATAL,  /* 15 */
   "could not initialize output module <%s>",NOLINE|ERROR|FATAL,
   "out of memory",NOLINE|ERROR|FATAL,
   "symbol <%s> recursively defined",ERROR|FATAL,
@@ -86,9 +86,10 @@
   "external symbol <%s> must not be defined",ERROR,             /* 85 */
   "missing definition for symbol <%s>",NOLINE|WARNING,
   "additional macro arguments ignored (expecting %d)",WARNING,
-  "",ERROR,
+  "macro previously defined at line %d of %s",WARNING,
   "symbol <%s> cannot be redefined as a string symbol",ERROR,
   "internal symbol <%s> not found",ERROR,						/* 90 */
   "odd number of nybbles given",ERROR,
   "maximum number of loop iterations (%d) reached",ERROR,
   "missing loop condition",ERROR,
+

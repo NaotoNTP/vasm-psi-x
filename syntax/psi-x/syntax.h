@@ -20,6 +20,17 @@ char *chkidend(char *,char *);
 char *exp_skip(char *);
 #define EXPSKIP() s=exp_skip(s)
 
+/* support for broken negative hex-constants: $-hex */
+#define BROKEN_HEXCONST
+
+/* operator separation characters */
+#ifndef OPERSEP_COMMA
+#define OPERSEP_COMMA 1
+#endif
+#ifndef OPERSEP_BLANK
+#define OPERSEP_BLANK 0
+#endif
+
 /* ignore operand field, when the instruction has no operands */
 #define IGNORE_FIRST_EXTRA_OP 1
 
