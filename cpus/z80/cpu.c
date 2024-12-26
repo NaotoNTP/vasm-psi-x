@@ -548,8 +548,8 @@ mnemonic mnemonics[] = {
 
     "res",  { OP_NUMBER, OP_REG8|OP_INDEX|OP_RALT},             { TYPE_BIT, 0xCB80, CPU_NOT8080, F_ALL|F_ALTDWHL },
 
-    "ret",  { OP_NONE, },                                       { TYPE_NONE, 0xc9,   CPU_ALL|CPU_80OS, 0 },
     "ret",  { OP_FLAGS },                                       { TYPE_FLAGS, 0xc0, CPU_ALL, 0 },
+    "ret",  { OP_NONE, },                                       { TYPE_NONE, 0xc9,   CPU_ALL|CPU_80OS, 0 },
     "retn", { OP_NONE, },                                       { TYPE_NONE, 0xed45, CPU_ZILOG, 0 },
     "reti", { OP_NONE, },                                       { TYPE_NONE, 0xed4d, CPU_ZILOG|CPU_RABBIT|CPU_GB80, 0, 0, 0, 0, RCM_EMU_INCREMENT },
     "reti", { OP_NONE, },                                       { TYPE_NONE, 0xd9,   CPU_GB80, 0 },
