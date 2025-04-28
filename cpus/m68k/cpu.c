@@ -5715,9 +5715,14 @@ char *parse_instruction(char *s,int *inst_len,char **ext,int *ext_len,
 
   if (*s == '.')  /* allow dot as first char */
     s++;
+  if (*s && *s!='.' && !isspace((unsigned char)*s)) {
+    char c = *s;
+    if (ISIDSTART(c))
+      s++;
+  }
   while (*s && *s!='.' && !isspace((unsigned char)*s)) {
     char c = *s;
-    if (!isalnum((unsigned char)c))
+    if (!ISIDCHAR(c))
       break;
     s++;
   }
@@ -5726,9 +5731,14 @@ char *parse_instruction(char *s,int *inst_len,char **ext,int *ext_len,
   while (*s=='.' && cnt<MAX_QUALIFIERS) {
     s++;
     ext[cnt] = s;
+    if (*s && *s!='.' && !isspace((unsigned char)*s)) {
+      char c = *s;
+      if (ISIDSTART(c))
+        s++;
+    }
     while (*s && *s!='.' && !isspace((unsigned char)*s)) {
       char c = *s;
-      if (!isalnum((unsigned char)c))
+      if (!ISIDCHAR(c))
         break;
       s++;
     }

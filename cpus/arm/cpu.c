@@ -104,8 +104,17 @@ char *parse_instruction(char *s,int *inst_len,char **ext,int *ext_len,
   char *inst = s;
   int cnt = *ext_cnt;
 
-  while (*s && !isspace((unsigned char)*s))
+  if (*s && *s!='.' && !isspace((unsigned char)*s)) {
+    char c = *s;
+    if (ISIDSTART(c))
+      s++;
+  }
+  while (*s && *s!='.' && !isspace((unsigned char)*s)) {
+    char c = *s;
+    if (!ISIDCHAR(c))
+      break;
     s++;
+  }
 
   if (thumb_mode) {  /* no qualifiers in THUMB code */
     *inst_len = s - inst;

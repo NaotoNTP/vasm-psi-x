@@ -1,5 +1,5 @@
 /* syntax.c  syntax module for vasm */
-/* (c) in 2024 by 'Naoto' */
+/* by 'Naoto' 2025 */
 
 #include "time.h"
 #include "vasm.h"
@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.0 (c) 2025 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.1 by 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -2441,8 +2441,17 @@ void parse(void)
       continue;
     }
 #if MAX_QUALIFIERS==0
-    while (*s && !isspace((unsigned char)*s))
+    if (*s && !isspace((unsigned char)*s)) {
+      char c = *s;
+      if (ISIDSTART(c))
+        s++;
+    }
+    while (*s && !isspace((unsigned char)*s)) {
+      char c = *s;
+      if (!ISIDCHAR(c))
+        break;
       s++;
+    }
     inst_len = s - inst;
 #else
     s = parse_instruction(s,&inst_len,ext,ext_len,&ext_cnt);
