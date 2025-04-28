@@ -5534,7 +5534,7 @@ dblock *eval_data(operand *op,size_t bitsize,section *sec,taddr pc)
 
     default:
     /*cpu_error(38,bitsize); /* data objects with x size are not supported */
-	if (etype == HUG) {
+  if (etype == HUG) {
         if (typechk && !huge_chkrange(hval,bitsize))
           cpu_error(39);  /* data out of range */
         huge_to_mem(1,db->data,db->size,hval);
@@ -5715,15 +5715,23 @@ char *parse_instruction(char *s,int *inst_len,char **ext,int *ext_len,
 
   if (*s == '.')  /* allow dot as first char */
     s++;
-  while (*s && *s!='.' && !isspace((unsigned char)*s))
+  while (*s && *s!='.' && !isspace((unsigned char)*s)) {
+    char c = *s;
+    if (!isalnum((unsigned char)c))
+      break;
     s++;
+  }
   *inst_len = s - inst;
 
   while (*s=='.' && cnt<MAX_QUALIFIERS) {
     s++;
     ext[cnt] = s;
-    while (*s && *s!='.' && !isspace((unsigned char)*s))
+    while (*s && *s!='.' && !isspace((unsigned char)*s)) {
+      char c = *s;
+      if (!isalnum((unsigned char)c))
+        break;
       s++;
+    }
     ext_len[cnt] = s - ext[cnt];
     if (ext_len[cnt] <= 0)
       cpu_error(34);  /* illegal opcode extension */

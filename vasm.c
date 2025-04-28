@@ -292,13 +292,13 @@ static int resolve_section(section *sec)
         rorg_pc=*p->content.rorg;
         org_pc=sec->pc;
         sec->pc=rorg_pc;
-        sec->flags|=ABSOLUTE;
+      /*sec->flags|=ABSOLUTE;*/
         rorg=1;
       }
       else if(p->type==RORGEND&&rorg){
         sec->pc=org_pc+(sec->pc-rorg_pc);
         rorg_pc=0;
-        sec->flags&=~ABSOLUTE;
+      /*sec->flags&=~ABSOLUTE;*/
         rorg=0;
       }
       else if(p->type==LABEL){
@@ -348,7 +348,7 @@ static int resolve_section(section *sec)
     }
     if(rorg){
       sec->pc=org_pc+(sec->pc-rorg_pc);
-      sec->flags&=~ABSOLUTE;  /* workaround for missing RORGEND */
+      /*sec->flags&=~ABSOLUTE;*/  /* workaround for missing RORGEND */
     }
     /* Extend the fast-optimization phase, when there was no atom which
        became larger than in the previous pass. */
@@ -448,14 +448,14 @@ static void assemble(void)
         rorg_pc=*p->content.rorg;
         org_pc=sec->pc;
         sec->pc=rorg_pc;
-        sec->flags|=ABSOLUTE;
+        /*sec->flags|=ABSOLUTE;*/
         rorg=1;
       }
       else if(p->type==RORGEND){
         if(rorg){
           sec->pc=org_pc+(sec->pc-rorg_pc);
           rorg_pc=0;
-          sec->flags&=~ABSOLUTE;
+          /*sec->flags&=~ABSOLUTE;*/
           rorg=0;
         }
         else
@@ -552,7 +552,7 @@ static void assemble(void)
     if(rorg){
       sec->pc=org_pc+(sec->pc-rorg_pc);
       rorg_pc=0;
-      sec->flags&=~ABSOLUTE;
+			/*sec->flags&=~ABSOLUTE;*/
       rorg=0;
     }
     if(dwarf)
@@ -1034,10 +1034,12 @@ section *pop_section(void)
 static void reset_rorg(section *s)
 {
   add_atom(s,new_rorgend_atom());
-  if (s->flags & PREVABS)
+	/*
+	if (s->flags & PREVABS)
     s->flags |= ABSOLUTE;
   else
     s->flags &= ~ABSOLUTE;
+	*/
   s->flags &= ~IN_RORG;
 }
 
@@ -1089,12 +1091,14 @@ void start_rorg(taddr rorg)
     end_rorg();  /* we are already in a ROrg-block, so close it first */
   add_atom(s,new_rorg_atom(rorg));
   s->flags |= IN_RORG;
+	/*
   if (!(s->flags & ABSOLUTE)) {
     s->flags &= ~PREVABS;
-    s->flags |= ABSOLUTE;  /* make section absolute during the ROrg-block */
+    s->flags |= ABSOLUTE;
   }
   else
     s->flags |= PREVABS;
+	*/
 }
 
 void print_section(FILE *f,section *sec)

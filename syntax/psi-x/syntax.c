@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.2 (c) 2024 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.0 (c) 2025 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -30,6 +30,7 @@ const char *syntax_copyright="vasm 'psi-x' syntax module v1.1.2 (c) 2024 'Naoto'
 
 hashtable *dirhash;
 char commentchar = ';';
+int blockcomment = 0;
 int dotdirs;
 
 /* default sections */
@@ -126,7 +127,7 @@ static int string_stack_index;
 
 int isidstart(char c)
 {
-  if (isalpha((unsigned char)c) || c==options.l || c=='_')
+  if (isalpha((unsigned char)c) || c==options.l || c=='_' || c=='@')
     return 1;
   if (dot_idchar && c=='.')
     return 1;
@@ -184,9 +185,18 @@ char *exp_skip(char *s)
     s = skip(start);
     if (*s == commentchar)
       *s = '\0';  /* rest of operand is ignored */
+    else if (!strnicmp(s,"#||",3)) {
+      blockcomment = 1;
+      *s = '\0';  /* rest of operand is ignored */
+    }
+
   }
   else if (isspace((unsigned char)*s) || *s==commentchar)
     *s = '\0';  /* rest of operand is ignored */
+  else if (!strnicmp(s,"#||",3)) {
+    blockcomment = 1;
+    *s = '\0';  /* rest of operand is ignored */
+  }
   return s;
 }
 
@@ -215,15 +225,20 @@ char *skip_operand(char *s)
       else
         syntax_error(3);  /* too many closing parentheses */
     }
-#if defined(VASM_CPU_Z80)
+    #if defined(VASM_CPU_Z80)
     /* For the Z80 ignore ' behind a letter, as it may be a register */
     else if ((c=='\'' && (lastuc<'A' || lastuc>'Z')) || c=='\"')
-#else
+    #else
     else if (c=='\'' || c=='\"')
-#endif
+    #endif
       s = skip_string(s,c,NULL) - 1;
     else if (!c || (par_cnt==0 && (c==',' || c==commentchar)))
       break;
+    else if (!strnicmp(s,"#||",3)) {
+      blockcomment = 1;
+      *s = '\0';  /* rest of operand is ignored */
+      break;
+    }
 
     s++;
   }
@@ -1472,14 +1487,22 @@ static void handle_public(char *s)
 
   if (!strnicmp(s,"on",2) &&
         (isspace((unsigned char)*(s+2)) || *(s+2)=='\0'
-          || *(s+2)==commentchar)) {
+          || *(s+2)==commentchar) || (!strnicmp(s+2,"#||",3))) {
     s = skip(s+2);
+    if (!strnicmp(s,"#||",3)) {
+      blockcomment = 1;
+      *s = '\0';
+    }
     public_status = 1;
   }
   else if (!strnicmp(s,"off",3) &&
             (isspace((unsigned char)*(s+3)) || *(s+3)=='\0'
-              || *(s+3)==commentchar)) {
+              || *(s+3)==commentchar) || (!strnicmp(s+3,"#||",3))) {
     s = skip(s+3);
+    if (!strnicmp(s,"#||",3)) {
+      blockcomment = 1;
+      *s = '\0';
+    }
     public_status = 0;
   }
   else
@@ -2057,300 +2080,343 @@ void parse(void)
   int ext_len[MAX_QUALIFIERS?MAX_QUALIFIERS:1];
   int op_len[MAX_OPERANDS];
   int ext_cnt,op_cnt,inst_len;
+  int comm_invoked = 0;
   instruction *ip;
 
   while (line = read_next_line()) {
     if (parse_end)
       continue;
-
+    
+    comm_invoked = 0;
     s = line;
 
-    if (!cond_state()) {
-      /* skip source until ELSE or ENDIF */
-      int idx;
+    if (!blockcomment) {
+      if (!cond_state()) {
+        /* skip source until ELSE or ENDIF */
+        int idx;
 
-      /* skip label, when present */
-      if (labname = parse_label_or_pc(&s)) {
-        if (*s == ':')
-          s++;  /* skip double-colon */
-      }
+        /* skip label, when present */
+        if (labname = parse_label_or_pc(&s)) {
+          if (*s == ':')
+            s++;  /* skip double-colon */
+        }
 
-      /* advance to directive */
-      idx = check_directive(&s);
-      if (idx >= 0) {
-        if (!cond_type()) {
-          if (!strncmp(directives[idx].name,"if",2))
-            cond_skipif();
-          else if (directives[idx].func == handle_switch)
-            cond_skipif();
-          else if (directives[idx].func == handle_case)
-            cond_skipelse();
-          else if (directives[idx].func == handle_else)
-            cond_else();
-          else if (directives[idx].func == handle_endif)
-            cond_endif();
-          else if (directives[idx].func == handle_elseif) {
-            s = skip(s);
-            cond_elseif(eval_ifexp(&s,1));
+        /* advance to directive */
+        idx = check_directive(&s);
+        if (idx >= 0) {
+          if (!cond_type()) {
+            if (!strncmp(directives[idx].name,"if",2))
+              cond_skipif();
+            else if (directives[idx].func == handle_switch)
+              cond_skipif();
+            else if (directives[idx].func == handle_case)
+              cond_skipelse();
+            else if (directives[idx].func == handle_else)
+              cond_else();
+            else if (directives[idx].func == handle_endif)
+              cond_endif();
+            else if (directives[idx].func == handle_elseif) {
+              s = skip(s);
+              cond_elseif(eval_ifexp(&s,1));
+            }
+          }
+          else {
+            if (!strncmp(directives[idx].name,"if",2))
+              cond_skipif();
+            else if (directives[idx].func == handle_switch)
+              cond_skipif();
+            else if (directives[idx].func == handle_case)
+              cond_elseif(eval_case(s));
+            else if (directives[idx].func == handle_else)
+              cond_else();
+            else if (directives[idx].func == handle_endif)
+              cond_endif();
+            else if (directives[idx].func == handle_elseif)
+              cond_skipelse();
           }
         }
-        else {
-          if (!strncmp(directives[idx].name,"if",2))
-            cond_skipif();
-          else if (directives[idx].func == handle_switch)
-            cond_skipif();
-          else if (directives[idx].func == handle_case)
-            cond_elseif(eval_case(s));
-          else if (directives[idx].func == handle_else)
-            cond_else();
-          else if (directives[idx].func == handle_endif)
-            cond_endif();
-          else if (directives[idx].func == handle_elseif)
-            cond_skipelse();
-        }
-      }
-      continue;
-    }
-
-    if (labname = parse_label_or_pc(&s)) {
-      /* we have found a global or local label, or current-pc character */
-      uint32_t symflags = 0;
-      symbol *label;
-
-      if (*s == ':') {
-        /* double colon automatically declares label as exported */
-        symflags |= EXPORT|XDEF;
-        s++;
+        continue;
       }
 
-      if (public_status)
-        label->flags |= EXPORT|XDEF;
+      if (labname = parse_label_or_pc(&s)) {
+        /* we have found a global or local label, or current-pc character */
+        uint32_t symflags = 0;
+        symbol *label;
 
-      s = skip(s);
-
-      s = handle_iif(s);
-
-      if (!strnicmp(s,"equ",3) && isspace((unsigned char)*(s+3))) {
-        s = skip(s+3);
-        label = new_equate(labname,parse_expr_tmplab(&s));
-        label->flags |= symflags;
-      }
-    #if !defined(VASM_CPU_Z80)
-      else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
-        /* set allows redefinitions */
-        s = skip(s+3);
-        label = new_abs(labname,parse_expr_tmplab(&s));
-      } 
-    #endif
-      else if (*s=='=') {
-        s++;
-        if (*s=='=') {
-          /* '==' is shorthand for equ */
+        if (*s == ':') {
+          /* double colon automatically declares label as exported */
+          symflags |= EXPORT|XDEF;
           s++;
-          s = skip(s);
+        }
+
+        if (public_status)
+          label->flags |= EXPORT|XDEF;
+
+        s = skip(s);
+
+        s = handle_iif(s);
+
+        if (!strnicmp(s,"equ",3) && isspace((unsigned char)*(s+3))) {
+          s = skip(s+3);
           label = new_equate(labname,parse_expr_tmplab(&s));
           label->flags |= symflags;
+        }
+      #if !defined(VASM_CPU_Z80)
+        else if (!strnicmp(s,"set",3) && isspace((unsigned char)*(s+3))) {
+          /* set allows redefinitions */
+          s = skip(s+3);
+          label = new_abs(labname,parse_expr_tmplab(&s));
         } 
-      else {
-        /* '=' is shorthand for set */
-        s = skip(s);
-        label = new_abs(labname,parse_expr_tmplab(&s));
-        }
-      }
-      else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
-        strbuf *buf;
-        symbol *sym;
-
-        s = skip(s+4);
-
-        if ((buf = get_local_label(1,&s)) || (buf = parse_identifier(1,&s))) {
-          if ((sym = find_symbol(buf->str)) && sym->type == STRSYM)
-            new_strsym(labname,sym->text);
-          else
-            syntax_error(27,buf->str); /* string symbol not found */
-        }
-        else if (buf = parse_name(1,&s)) {
-          new_strsym(labname,buf->str);
-        }
+      #endif
+        else if (*s=='=') {
+          s++;
+          if (*s=='=') {
+            /* '==' is shorthand for equ */
+            s++;
+            s = skip(s);
+            label = new_equate(labname,parse_expr_tmplab(&s));
+            label->flags |= symflags;
+          } 
         else {
-          syntax_error(28); /* quoted string or string symbol expected in operand */
-        }
-
-        eol(s);
-        continue;
-      }
-      else if (!strnicmp(s,"alias",5) && isspace((unsigned char)*(s+5))) {
-        strbuf *buf;
-        symbol *sym;
-
-        s = skip(s+5);
-
-        if (!(buf = parse_identifier(1,&s))) {
-          syntax_error(10);  /* identifier expected */
-          continue;        
-        }
-
-        if (!(sym = find_symbol(buf->str)) || !(sym->flags & VASMINTERN)) {
-          general_error(90,buf->str);  /* internal symbol not found */
-          continue;
-        }
-
-        refer_symbol(sym,mystrdup(labname));
-        eol(s);
-        continue;
-      }
-      else if (!strnicmp(s,"macros",6) &&
-               (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
-                || *(s+6)==commentchar)) {
-        char *params = skip(s+6);
-        strbuf *buf;
-
-        if(ISEOL(params))
-          params = NULL;
-
-        s = line;
-        if (!(buf = parse_identifier(0,&s)))
-          ierror(0);
-        new_macro(buf->str,macro_dirlist,NULL,params);
-        continue;
-      }
-      else if (!strnicmp(s,"macro",5) &&
-               (isspace((unsigned char)*(s+5)) || *(s+5)=='\0'
-                || *(s+5)==commentchar)) {
-        char *params = skip(s+5);
-        strbuf *buf;
-
-        if(ISEOL(params))
-          params = NULL;
-
-        s = line;
-        if (!(buf = parse_identifier(0,&s)))
-          ierror(0);
-        new_macro(buf->str,macro_dirlist,endm_dirlist,params);
-        continue;
-      }
-      else if (!strnicmp(s,"struct",6) &&
-               (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
-                || *(s+6)==commentchar)) {
-        strbuf *buf;
-
-        s = line;
-        if (!(buf = parse_identifier(0,&s)))
-          ierror(0);
-        if (new_structure(buf->str))
-          current_section->flags |= LABELS_ARE_LOCAL;
-        continue;
-      }
-      else if (!strnicmp(s,"substr",6) && isspace((unsigned char)*(s+6))) {
-        strbuf *buf;
-        symbol *sym;
-        char *text, substr[256];
-        int start, end, len;
-        char backup;
-
-        s = skip(s+6);
-
-        /* parse start index parameter */
-        if (*s == ',') {
-          start = 0;
-        }
-        else {
-          start = parse_constexpr(&s);
-          if (start < 0) {
-            syntax_error(29); /* substring index must be positive */
-            continue;
+          /* '=' is shorthand for set */
+          s = skip(s);
+          label = new_abs(labname,parse_expr_tmplab(&s));
           }
         }
-        
-        s = skip(s);
-        if (*s != ',') {
-          syntax_error(5); /* missing operand */
-          continue;
-        }
-        s = skip(s+1);
-        
-        /* parse end index parameter */
-        if (*s == ',') {
-          end = -1;
-        }
-        else {
-          end = parse_constexpr(&s);
-          if (end < 0) {
-            syntax_error(29); /* substring index must be positive */
-            continue;
-          }
-          else if (end <= start) {
-            syntax_error(30); /* substring ending index greater than the starting index */
-            continue;
-          }
-        }
-        
-        s = skip(s);
-        if (*s != ',') {
-          syntax_error(5); /* missing operand */
-          continue;
-        }
-        s = skip(s+1);
+        else if (!strnicmp(s,"equs",4) && isspace((unsigned char)*(s+4))) {
+          strbuf *buf;
+          symbol *sym;
 
-        if ((buf = get_local_label(1,&s)) || (buf = parse_identifier(1,&s))) {
-          if (!(sym = find_symbol(buf->str)) && !(sym->type == STRSYM)) {
-            syntax_error(27,buf->str); /* string symbol not found */
-            eol(s);
-            continue;
+          s = skip(s+4);
+
+          if ((buf = get_local_label(1,&s)) || (buf = parse_identifier(1,&s))) {
+            if ((sym = find_symbol(buf->str)) && sym->type == STRSYM)
+              new_strsym(labname,sym->text);
+            else
+              syntax_error(27,buf->str); /* string symbol not found */
           }
-        }
-        else if (!(buf = parse_name(1,&s))) {
-          syntax_error(28); /* quoted string or string symbol expected in operand */
+          else if (buf = parse_name(1,&s)) {
+            new_strsym(labname,buf->str);
+          }
+          else {
+            syntax_error(28); /* quoted string or string symbol expected in operand */
+          }
+
           eol(s);
           continue;
         }
+        else if (!strnicmp(s,"alias",5) && isspace((unsigned char)*(s+5))) {
+          strbuf *buf;
+          symbol *sym;
 
-        /* duplicate the string data */
-        if (sym)
-          text = mystrdup(sym->text);
-        else
-          text = mystrdup(buf->str);
+          s = skip(s+5);
 
-        /* get the copy length and set the ending position if necessary */
-        if (end < 0)
-          end = strlen(text);
-        else if (end > strlen(text)) {
-          syntax_error(31); /* substring ending index greater length of string */
+          if (!(buf = parse_identifier(1,&s))) {
+            syntax_error(10);  /* identifier expected */
+            continue;        
+          }
+
+          if (!(sym = find_symbol(buf->str)) || !(sym->flags & VASMINTERN)) {
+            general_error(90,buf->str);  /* internal symbol not found */
+            continue;
+          }
+
+          refer_symbol(sym,mystrdup(labname));
+          eol(s);
+          continue;
+        }
+        else if (!strnicmp(s,"macros",6) &&
+                  (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
+                  || *(s+6)==commentchar) || (!strnicmp(s+6,"#||",3))) {
+          char *params = skip(s+6);
+          strbuf *buf;
+
+          if (!strnicmp(params,"#||",3)) {
+            blockcomment = 1;
+            *params = '\0';
+          }
+
+          if(ISEOL(params))
+            params = NULL;
+
+          s = line;
+          if (!(buf = parse_identifier(0,&s)))
+            ierror(0);
+          new_macro(buf->str,macro_dirlist,NULL,params);
+          continue;
+        }
+        else if (!strnicmp(s,"macro",5) &&
+                  (isspace((unsigned char)*(s+5)) || *(s+5)=='\0'
+                  || *(s+5)==commentchar) || (!strnicmp(s+5,"#||",3))) {
+          char *params = skip(s+5);
+          strbuf *buf;
+          
+          if (!strnicmp(params,"#||",3)) {
+            blockcomment = 1;
+            *params = '\0';
+          }
+
+          if(ISEOL(params))
+            params = NULL;
+
+          s = line;
+          if (!(buf = parse_identifier(0,&s)))
+            ierror(0);
+          new_macro(buf->str,macro_dirlist,endm_dirlist,params);
+          continue;
+        }
+        else if (!strnicmp(s,"struct",6) &&
+                  (isspace((unsigned char)*(s+6)) || *(s+6)=='\0'
+                  || *(s+6)==commentchar) || (!strnicmp(s+6,"#||",3))) {
+          strbuf *buf;
+
+          s = line;
+          if (!(buf = parse_identifier(0,&s)))
+            ierror(0);
+          if (new_structure(buf->str))
+            current_section->flags |= LABELS_ARE_LOCAL;
+          continue;
+        }
+        else if (!strnicmp(s,"substr",6) && isspace((unsigned char)*(s+6))) {
+          strbuf *buf;
+          symbol *sym;
+          char *text, substr[256];
+          int start, end, len;
+          char backup;
+
+          s = skip(s+6);
+
+          /* parse start index parameter */
+          if (*s == ',') {
+            start = 0;
+          }
+          else {
+            start = parse_constexpr(&s);
+            if (start < 0) {
+              syntax_error(29); /* substring index must be positive */
+              continue;
+            }
+          }
+          
+          s = skip(s);
+          if (*s != ',') {
+            syntax_error(5); /* missing operand */
+            continue;
+          }
+          s = skip(s+1);
+          
+          /* parse end index parameter */
+          if (*s == ',') {
+            end = -1;
+          }
+          else {
+            end = parse_constexpr(&s);
+            if (end < 0) {
+              syntax_error(29); /* substring index must be positive */
+              continue;
+            }
+            else if (end <= start) {
+              syntax_error(30); /* substring ending index greater than the starting index */
+              continue;
+            }
+          }
+          
+          s = skip(s);
+          if (*s != ',') {
+            syntax_error(5); /* missing operand */
+            continue;
+          }
+          s = skip(s+1);
+
+          if ((buf = get_local_label(1,&s)) || (buf = parse_identifier(1,&s))) {
+            if (!(sym = find_symbol(buf->str)) && !(sym->type == STRSYM)) {
+              syntax_error(27,buf->str); /* string symbol not found */
+              eol(s);
+              continue;
+            }
+          }
+          else if (!(buf = parse_name(1,&s))) {
+            syntax_error(28); /* quoted string or string symbol expected in operand */
+            eol(s);
+            continue;
+          }
+
+          /* duplicate the string data */
+          if (sym)
+            text = mystrdup(sym->text);
+          else
+            text = mystrdup(buf->str);
+
+          /* get the copy length and set the ending position if necessary */
+          if (end < 0)
+            end = strlen(text);
+          else if (end > strlen(text)) {
+            syntax_error(31); /* substring ending index greater length of string */
+            myfree(text);
+            eol(s);
+            continue;
+          }
+
+          len = end - start;
+
+          /* create the substring and assign it to the symbol */
+          strncpy(substr,&text[start],len);
+          substr[len] = '\0';
+          new_strsym(labname,substr);
+
+          /* free the memory containing duplicate string data and continue parsing */
           myfree(text);
           eol(s);
           continue;
         }
+        else if (offs_directive(s,"rs")) {
+          label = new_setoffset(labname,&s,rs_name,1);
+        }
 
-        len = end - start;
-
-        /* create the substring and assign it to the symbol */
-        strncpy(substr,&text[start],len);
-        substr[len] = '\0';
-        new_strsym(labname,substr);
-
-        /* free the memory containing duplicate string data and continue parsing */
-        myfree(text);
-        eol(s);
-        continue;
-      }
-      else if (offs_directive(s,"rs")) {
-        label = new_setoffset(labname,&s,rs_name,1);
-      }
-
-#ifdef PARSE_CPU_LABEL
-      else if (!PARSE_CPU_LABEL(labname,&s)) {
-#else
-      else {
-#endif
-        /* it's just a label */
-        label = new_labsym(0,labname);
-        label->flags |= symflags;
-        add_atom(0,new_label_atom(label));
+      #ifdef PARSE_CPU_LABEL
+        else if (!PARSE_CPU_LABEL(labname,&s)) {
+      #else
+        else {
+      #endif
+          /* it's just a label */
+          label = new_labsym(0,labname);
+          label->flags |= symflags;
+          add_atom(0,new_label_atom(label));
+        }
       }
     }
 
     /* check for directives */
     s = skip(s);
+    
+    /* invoke block comment */
+    if (!strnicmp(s,"#||",3)) {
+      blockcomment = 1;
+      s = skip(s+3);
+
+      if (ISEOL(s)) {
+        continue;
+      }
+    }
+    
+    /* handle block comment */
+    if (blockcomment) {
+      char *t = strstr(s,"||#");
+
+      /* if terminating string found, end the block comment */
+      if (t) {
+        blockcomment = 0;
+        s = skip(t+3);
+
+        if (ISEOL(s)) {
+          continue;
+        }
+      }
+      else {
+        continue; /* otherwise, move on and parse the next line */
+      }
+    }
+
     if (*s==commentchar)
       continue;
 
@@ -2381,8 +2447,18 @@ void parse(void)
 #else
     s = parse_instruction(s,&inst_len,ext,ext_len,&ext_cnt);
 #endif
-    if (!isspace((unsigned char)*s) && *s!='\0')
-      syntax_error(2);  /* no space before operands */
+    if (!isspace((unsigned char)*s) && *s!='\0') {
+      /* invoke block comment */
+      if (!strnicmp(s,"#||",3)) {
+        blockcomment = 1;
+        comm_invoked = 1;
+        s = skip(s+3);
+      }
+      else if (*s==commentchar)
+        comm_invoked = 1;
+      else
+        syntax_error(2);  /* no space before operands */
+    }
     s = skip(s);
 
     if (execute_macro(inst,inst_len,ext,ext_len,ext_cnt,s))
@@ -2392,28 +2468,30 @@ void parse(void)
 
     /* read operands, terminated by comma or blank (unless in parentheses) */
     op_cnt = 0;
-    while (!ISEOL(s) && op_cnt<MAX_OPERANDS) {
-      op[op_cnt] = s;
-      s = skip_operand(s);
-      op_len[op_cnt] = oplen(s,op[op_cnt]);
-#if !ALLOW_EMPTY_OPS
-      if (op_len[op_cnt] <= 0)
-        syntax_error(5);  /* missing operand */
-      else
-#endif
-      op_cnt++;
-      
-      if (options.ws) {
-        s = skip(s);
-        if (*s != ',')
-          break;
+    if (!comm_invoked) {
+      while (!ISEOL(s) && op_cnt<MAX_OPERANDS) {
+        op[op_cnt] = s;
+        s = skip_operand(s);
+        op_len[op_cnt] = oplen(s,op[op_cnt]);
+      #if !ALLOW_EMPTY_OPS
+        if (op_len[op_cnt] <= 0)
+          syntax_error(5);  /* missing operand */
         else
-          s = skip(s+1);
-      }
-      else {
-        if (*s != ',')
-          break;
-        s++;
+      #endif
+        op_cnt++;
+        
+        if (options.ws) {
+          s = skip(s);
+          if (*s != ',')
+            break;
+          else
+            s = skip(s+1);
+        }
+        else {
+          if (*s != ',')
+            break;
+          s++;
+        }
       }
     }
     eol(s);

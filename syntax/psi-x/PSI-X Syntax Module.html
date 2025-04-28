@@ -132,16 +132,14 @@ directive for conditional assembly (if, else, endif, etc.), as this is not suppo
 </p>
 <p>Comments are introduced by the comment character (<code>;</code>). The assembler will attempt 
 to issue a warning if a comment is introduced at the end of a line without the comment character,
-but this is not guaranteed. Additionally, multi-line comment blocks are supported by way of the <code>comment</code> directive.
+but this is not guaranteed. Additionally, lisp-style multi-line comment blocks are supported (invoked with ’<code>#||</code>’ and terminated with ’<code>||#</code>’):
 <p>Examples:
 </p><div class="example">
 <pre class="example">label:	instr.q	op1,op2	; comment</pre>
 <pre class="example"> </pre>
-<pre class="example">	comment</pre>
-<pre class="example">........................</pre>
+<pre class="example">#|| ....................</pre>
 <pre class="example">multi-line comment block</pre>
-<pre class="example">........................</pre>
-<pre class="example">	comend</pre>
+<pre class="example">.................... ||#</pre>
 </div>
 
 <p>In expressions, numbers starting with <code>$</code> are hexadecimal (i.e.
@@ -223,8 +221,9 @@ CPU- and output-module allow it):
 </dd>
 
 <dt><code>comment/comend</code></dt>
-<dd><p>      Multi-line comment directives. The assembler will ignore everything from encountering the <code>comment</code>
-	directive until a <code>comend</code> directive is found, at which point normal assembly continues.
+<dd><p>      Deprecated multi-line comment directives. The assembler will ignore everything from encountering the <code>comment</code>
+	directive until a <code>comend</code> directive is found, at which point normal assembly continues. These remain for compatibility
+	with older versions, but their functionality is largely rendered obselete by support for lisp-style multi-line comments.
 </p>
 </dd>
 
