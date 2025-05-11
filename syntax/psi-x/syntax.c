@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.1 by 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.2 by 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -1703,7 +1703,7 @@ static void handle_popo(char *s)
   if (options_stack_index > 0 ) {
     options = options_stack[--options_stack_index];
     no_warn = (options.w) ? 0 : 1;
-    nocase = options.c;
+    nocase = (options.c) ? 0 : 1;
   }
   else {
     syntax_error(37);  /* options stack is empty */
