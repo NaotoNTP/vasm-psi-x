@@ -1,0 +1,19 @@
+# AmigaOS 4.x/PPC
+
+TARGET = vlink_os4
+DIR = AmigaOS4
+MD = makedir
+RM = delete force quiet
+
+CC = vc +aosppc
+CCOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+CFLAGS = -c -O1
+CONFIG = -DAMIGAOS -D__USE_INLINE__
+
+LD = vc +aosppc
+LDOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+LDOPTS =
+LIBS = -lamiga
+
+
+include make.rules

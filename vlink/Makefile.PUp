@@ -1,0 +1,19 @@
+# PowerUp
+
+TARGET = vlink_pup
+DIR = PowerUp
+MD = makedir
+RM = delete force quiet
+
+CC = vc +powerup
+CCOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+CFLAGS = -c99 -c -O1
+CONFIG = -DAMIGAOS
+
+LD = vc +powerup
+LDOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+LDOPTS =
+LIBS = -lamiga
+
+
+include make.rules

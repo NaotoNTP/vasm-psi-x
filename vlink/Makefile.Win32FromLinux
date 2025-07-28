@@ -1,0 +1,19 @@
+# Linux to Win32 cross with mingw-w64
+
+TARGET = vlink.exe
+DIR = objects
+MD = mkdir
+RM = rm -f
+
+CC = /usr/bin/i686-w64-mingw32-gcc
+CCOUT = -o $(DUMMYVARIABLE)    # produces the string "-o "
+CFLAGS = -std=c9x -O2 -fomit-frame-pointer -c
+CONFIG =
+
+LD = /usr/bin/i686-w64-mingw32-gcc
+LDOUT = -o $(DUMMYVARIABLE)    # produces the string "-o "
+LDOPTS =
+LIBS =
+
+
+include make.rules

@@ -1,0 +1,19 @@
+# MorphOS
+
+TARGET = vlink_mos
+DIR = MorphOS
+MD = makedir
+RM = delete force quiet
+
+CC = vc +morphos
+CCOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+CFLAGS = -c -O1
+CONFIG = -DAMIGAOS
+
+LD = vc +morphos
+LDOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+LDOPTS = 
+LIBS = -lamiga
+
+
+include make.rules

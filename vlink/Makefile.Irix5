@@ -1,0 +1,19 @@
+# IRIX
+
+TARGET = vlink
+DIR = Irix5
+MD = mkdir
+RM = rm -f
+
+CC = gcc
+CCOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+CFLAGS = -O2 -fomit-frame-pointer -c
+CONFIG = -DTYPES32BIT
+
+LD = gcc
+LDOUT = -o $(DUMMYVARIABLE)	# produces the string "-o "
+LDOPTS = 
+LIBS = -lgen
+
+
+include make.rules
