@@ -1283,7 +1283,7 @@ void linker_resolve(struct GlobalVars *gv)
           if (!(xdef = lnksymbol(gv,sec,xref))) {
 
             /* ref. to undefined symbol is only an error for executables */
-            if (!gv->dest_object && !gv->dest_sharedobj) {
+            if (!gv->discardOutput && !gv->dest_object && !gv->dest_sharedobj) {
               if (xref->flags & RELF_WEAK) {
                 /* weak references default to absolute 0 */
                 xdef = addlnksymbol(gv,xref->xrefname,0,SYM_ABS,0,
@@ -3041,7 +3041,7 @@ void linker_write(struct GlobalVars *gv)
 {
   FILE *f;
 
-  if (!gv->errflag) {  /* no error? */
+  if (!gv->errflag && !gv->discardOutput) {  /* no error? */
     if (gv->bits_per_tbyte!=8 &&
         !(fff[gv->dest_format]->flags&FFF_OUTWORDADDR)) {
       /* bits per byte not supported by output format */

@@ -1410,7 +1410,7 @@ static void rawbin_out(struct GlobalVars *gv,FILE *f,int header)
         if (gv->osec_base_name != NULL) {
           /* use a common base name before the section name */
           name = alloc(strlen(gv->osec_base_name)+strlen(ls->name)+2);
-	  sprintf(name,"%s.%s",gv->osec_base_name,ls->name);
+    sprintf(name,"%s.%s",gv->osec_base_name,ls->name);
         }
         else
           name = (char *)ls->name;
@@ -1448,7 +1448,7 @@ static void rawbin_out(struct GlobalVars *gv,FILE *f,int header)
               fprintf(bbcload,"*srload %s%s 8000 %s\r",gv->dest_name,ls->name,ls->name+1);
           }else
 #endif
-	    sprintf(name,"%s.%s",gv->dest_name,ls->name);
+      sprintf(name,"%s.%s",gv->dest_name,ls->name);
           if (!(f = fopen(name,"wb"))) {
             error(29,name);
             break;

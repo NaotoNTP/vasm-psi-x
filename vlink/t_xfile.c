@@ -170,7 +170,7 @@ static size_t xfile_symboltable(struct GlobalVars *gv,FILE *f,
         if (!discard_symbol(gv,sym)) {
           /* write symbol type */
           if (sym->type == SYM_ABS) {
-          	fwrite16be(f,XSYM_ABS);
+            fwrite16be(f,XSYM_ABS);
           }
           else if (sym->type == SYM_RELOC) {
             fwrite16be(f,relocsymtype[i]);

@@ -13,7 +13,7 @@
 #define HUNK_DATA         1002
 #define HUNK_BSS          1003
 #define HUNK_RELOC32      1004
-#define HUNK_ABSRELOC32	  HUNK_RELOC32
+#define HUNK_ABSRELOC32    HUNK_RELOC32
 #define HUNK_RELOC16      1005
 #define HUNK_RELRELOC16   HUNK_RELOC16
 #define HUNK_RELOC8       1006

@@ -39,7 +39,7 @@ typedef signed long int int64_t;
 typedef unsigned long int uint64_t;
 typedef unsigned long uintptr_t;
 #elif defined(_MSC_VER) && (_MSC_VER < 1600)
-typedef __int8 int8_t;	            /* prior to VS2010 stdint.h is missing */
+typedef __int8 int8_t;              /* prior to VS2010 stdint.h is missing */
 typedef unsigned __int8 uint8_t;
 typedef __int16 int16_t;
 typedef unsigned __int16 uint16_t;
@@ -68,9 +68,9 @@ typedef int bool;
 #define NULL 0
 #endif
 #define INVALID (~0)
-#define ADDR_NONE (~0)		/* no defined address: 0xffffffff */
+#define ADDR_NONE (~0)    /* no defined address: 0xffffffff */
 
-#define MAXLEN 256		/* maximum length for symbols and buffers */
+#define MAXLEN 256    /* maximum length for symbols and buffers */
 #define FNAMEBUFSIZE 1024       /* buffer size for file names */
 #define MAX_FWALIGN 8192        /* max. alignment, when writing target file */
 
@@ -193,7 +193,7 @@ struct SourceLines {
   unsigned short nameidx;       /* source text name table index */
   unsigned lang;                /* source language */
   unsigned entries;             /* number of line/offset entries */
-  srclinetype *lines;	        /* array of line-numbers */
+  srclinetype *lines;          /* array of line-numbers */
   srcoffstype *offsets;         /* array of section-offsets */
 };
 /* flags */
@@ -217,7 +217,7 @@ struct Section {
   unsigned long offset;         /* offset relative to 1st sec. of same type */
   uint8_t *data;                /* the section's contents */
   unsigned long size;           /* the section's size in bytes (+alignment) */
-  unsigned long last_reloc;	/* offset to location behind last reloc/xref */
+  unsigned long last_reloc;  /* offset to location behind last reloc/xref */
   struct list relocs;           /* relocations for this section */
   struct list xrefs;            /* external references to unknown symbols */
   struct RelRef *relrefs;       /* all sections which are referenced rel. */
@@ -282,7 +282,7 @@ struct Reloc {                  /* relocation information */
     struct LinkedSection *lnk;  /* base addr of merged output sections */
     struct Symbol *symbol;      /* symbol-pointer, if x-ref. was resolved */
     uint32_t smask;             /* symbol name's feat.mask (!OUF_LINKED) */
-    struct SymbolMask *cmask;	/* ORed feat.mask of all xrefs with this name */
+    struct SymbolMask *cmask;  /* ORed feat.mask of all xrefs with this name */
     int xrefinfo;               /* xref info/index field for output funcs */
   } relocsect;
   unsigned long offset;         /* section-offset of relocation */
@@ -565,6 +565,7 @@ struct GlobalVars {
   const char *interp_path;      /* path to program interpreter (ELF) */
   struct list rpaths;           /* library paths for dynamic linker (ELF) */
   const char *lineoffsfile;     /* optional source line/offsets output */
+  bool discardOutput;           /* if true, don't create output file */
 
   /* errors */
   bool dontwarn;                /* suppress warnings */

@@ -9,20 +9,20 @@
 #include "elfcommon.h"
 
 struct Elf64_Ehdr {
-  unsigned char	e_ident[EI_NIDENT];	/* ELF "magic number" */
-  unsigned char	e_type[2];          /* Identifies object file type */
-  unsigned char	e_machine[2];       /* Specifies required architecture */
-  unsigned char	e_version[4];       /* Identifies object file version */
-  unsigned char	e_entry[8];         /* Entry point virtual address */
-  unsigned char	e_phoff[8];         /* Program header table file offset */
-  unsigned char	e_shoff[8];         /* Section header table file offset */
-  unsigned char	e_flags[4];         /* Processor-specific flags */
-  unsigned char	e_ehsize[2];        /* ELF header size in bytes */
-  unsigned char	e_phentsize[2];     /* Program header table entry size */
-  unsigned char	e_phnum[2];         /* Program header table entry count */
-  unsigned char	e_shentsize[2];     /* Section header table entry size */
-  unsigned char	e_shnum[2];         /* Section header table entry count */
-  unsigned char	e_shstrndx[2];      /* Section header string table index */
+  unsigned char  e_ident[EI_NIDENT];  /* ELF "magic number" */
+  unsigned char  e_type[2];          /* Identifies object file type */
+  unsigned char  e_machine[2];       /* Specifies required architecture */
+  unsigned char  e_version[4];       /* Identifies object file version */
+  unsigned char  e_entry[8];         /* Entry point virtual address */
+  unsigned char  e_phoff[8];         /* Program header table file offset */
+  unsigned char  e_shoff[8];         /* Section header table file offset */
+  unsigned char  e_flags[4];         /* Processor-specific flags */
+  unsigned char  e_ehsize[2];        /* ELF header size in bytes */
+  unsigned char  e_phentsize[2];     /* Program header table entry size */
+  unsigned char  e_phnum[2];         /* Program header table entry count */
+  unsigned char  e_shentsize[2];     /* Section header table entry size */
+  unsigned char  e_shnum[2];         /* Section header table entry count */
+  unsigned char  e_shstrndx[2];      /* Section header string table index */
 };
 
 struct Elf64_Phdr {
@@ -80,7 +80,7 @@ struct Elf64_Rela {
 };
 
 #define ELF64_R_SYM(i) ((i) >> 32)
-#define ELF64_R_TYPE(i)	((i) & 0xffffffff)
+#define ELF64_R_TYPE(i)  ((i) & 0xffffffff)
 #define ELF64_R_INFO(sym,type) (((sym) << 32) + (type))
 
 struct Elf64_Dyn {

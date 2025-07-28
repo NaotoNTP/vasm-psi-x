@@ -11,8 +11,6 @@
 
 struct GlobalVars gvars;
 
-
-
 static const char *get_option_arg(int argc,const char *argv[],int *i)
 /* get pointer to the string, which either directly follows the option
    character or is stored in the next argument */
@@ -259,7 +257,9 @@ int main(int argc,const char *argv[])
         /* for compatibility with older vlink versions,
            elf32amiga is automatically converted into elf32powerup
            and amigaos into amigahunk */
-        if (!strcmp(buf,"elf32amiga"))
+        if (!strcmp(buf,"discard"))
+          gv->discardOutput = TRUE;
+        else if (!strcmp(buf,"elf32amiga"))
           buf = "elf32powerup";
         else if (!strcmp(buf,"amigaos"))
           buf = "amigahunk";

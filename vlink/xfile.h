@@ -39,7 +39,7 @@ typedef struct
   char name[1];           /* null-terminated symbol name, padded to even */
 } XSym;
 
-#define XSYM_ABS	0x0200
+#define XSYM_ABS  0x0200
 #define XSYM_TEXT       0x0201
 #define XSYM_DATA       0x0202
 #define XSYM_BSS        0x0203

@@ -792,7 +792,7 @@ static void init_got(struct GlobalVars *gv)
   struct LinkedSection *got,*dyn;
 
   if (got = find_lnksec(gv,got_name,0,0,0,0)) {
-    write32be(got->data,0x4e800021);  		  /* 0: blrl */
+    write32be(got->data,0x4e800021);        /* 0: blrl */
     if (dyn = find_lnksec(gv,dyn_name,0,0,0,0))
       write32be(got->data+4,(uint32_t)dyn->base);   /* 4: .dynamic address */
   }

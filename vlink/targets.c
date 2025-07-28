@@ -9,6 +9,36 @@
 #define TARGETS_C
 #include "vlink.h"
 
+struct FFFuncs fff_discard = {
+  "discard",
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,NULL,NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,NULL,
+  0,
+  0x8000,
+  0,
+  0,
+  RTAB_UNDEF,0,
+  -1, /* endianness undefined, only write */
+  0,  /* addr_bits from input */
+  0,  /* ptr-alignment unknown */
+  0
+};
 
 struct FFFuncs *fff[] = {
 #ifdef ADOS
@@ -151,6 +181,7 @@ struct FFFuncs *fff[] = {
 #ifdef RAWSEG
   &fff_rawseg,
 #endif
+  &fff_discard,
   NULL
 };
 
