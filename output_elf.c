@@ -326,6 +326,10 @@ static utaddr get_reloc_type(atom *a,rlist **rl,
 #include "elf_reloc_68k.h"
 #endif
 
+#ifdef VASM_CPU_Z80
+#include "elf_reloc_z80.h"
+#endif
+
 #ifdef VASM_CPU_PPC
 #include "elf_reloc_ppc.h"
 #endif
@@ -866,6 +870,8 @@ static void write_output(FILE *f,section *sec,symbol *sym)
     write_ELF32(f,sec,sym);
   else if (bits==64 && cpu!=EM_NONE)
     write_ELF64(f,sec,sym);
+  else if (cpu!=EM_NONE)
+    write_ELF32(f,sec,sym);
   else
     output_error(1,cpuname);  /* output module doesn't support cpu */
 
