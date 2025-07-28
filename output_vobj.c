@@ -296,8 +296,15 @@ static void write_output(FILE *f,section *sec,symbol *sym)
     if(!sym_valid(symp))
       continue;
     write_string(f,symp->name);
-    write_number(f,symp->type);
-    write_number(f,symp->flags);
+		
+		/* Special case for string symbols to be exported as standard symbols (allows compatibility with official versions of vlink). */
+		/* NOTE: The length of the string symbol is what's exported, not the text, as that's only relevant to pre-proccessor text replacement during assembly. */
+		if (symp->type == STRSYM)
+	    write_number(f,LABSYM);
+		else
+	    write_number(f,symp->type);
+    
+		write_number(f,symp->flags);
     write_number(f,symp->sec?symp->sec->idx:0);
     write_number(f,get_sym_value(symp));
     write_number(f,get_sym_size(symp));
