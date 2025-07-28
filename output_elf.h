@@ -55,7 +55,6 @@
 #define EM_JAGRISC        0x9004
 #define EM_CYGNUS_POWERPC 0x9025
 #define EM_ALPHA          0x9026
-#define EM_Z80						0xDC
 
 /* special sections indexes */
 #define SHN_UNDEF 0
@@ -314,9 +313,6 @@ struct Rel64Node {
 #elif defined(VASM_CPU_JAGRISC)
 #define RELA 1
 #define ELFCPU EM_JAGRISC
-#elif defined(VASM_CPU_Z80)
-#define RELA 1
-#define ELFCPU EM_Z80
 #else
 #define ELFCPU 0
 #endif

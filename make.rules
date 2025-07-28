@@ -87,7 +87,7 @@ $(PRE)output_test.o: output_test.c vasm.h symbol.h supp.h atom.h
 $(PRE)output_elf.o: output_elf.c vasm.h symbol.h stabs.h supp.h atom.h \
                     output_elf.h elf_reloc_ppc.h elf_reloc_68k.h \
                     elf_reloc_386.h elf_reloc_arm.h elf_reloc_x86_64.h \
-                    elf_reloc_jag.h elf_reloc_z80.h
+                    elf_reloc_jag.h
 	$(CC) $(INCLUDES) $(CFLAGS) output_elf.c $(CCOUT)$(PRE)output_elf.o
 
 $(PRE)output_bin.o: output_bin.c vasm.h symbol.h supp.h atom.h
