@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.2 by 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.3 by 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -1410,12 +1410,18 @@ static void handle_section(char *s)
     }
   }
   if (attr == NULL) {
-    if (!stricmp(name,"code") || !stricmp(name,"text"))
+    if (!stricmp(name,"code") || !stricmp(name,"text")) {
       attr = code_type;
-    else if (!strcmp(name,"data"))
+      name = code_name;
+    }
+    else if (!strcmp(name,"data")) {
       attr = data_type;
-    else if (!strcmp(name,"bss"))
+      name = data_name;
+    }
+    else if (!strcmp(name,"bss")) {
       attr = bss_type;
+      name = bss_name;
+    }
     else attr = defsecttype;
   }
 
