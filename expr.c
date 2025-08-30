@@ -15,7 +15,6 @@ static int charspertaddr;
 
 static expr *expression(void);
 
-
 int init_expr(void)
 {
   /* maximum number of characters in expression strings */

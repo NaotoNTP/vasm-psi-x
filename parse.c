@@ -1199,7 +1199,7 @@ char *read_next_line(void)
   nparam = cur_src->num_params;
 
   /* line buffer starts with 0, to allow checks for left-hand character */
-  *d++ = 0;
+  *d++ = '\0';
 
 	/* short macro definition check */
 	if ((cur_macro != NULL) && (enddir_list == NULL)) {
@@ -1362,6 +1362,60 @@ char *read_next_line(void)
   *d = '\0';
   cur_src->srcptr = s;
   s = cur_src->linebuf+1;
+
+  /*
+    At this point in the code, we will have a while loop that checks for the presence of functions in the line buffer (calls a function that returns true or false to do this).
+    If one is detected, it will copy the current line buffer and iterate over it, expanding each function as it goes and overwriting the old line buffer. Once this first
+    iteration of function expansion has been completed, the memory holding the temporary copy of the line buffer is freed, and we run the check for function expansion again.
+    This process will loop until all functions have been expanded.
+    
+    To prevent infinite loops and since functions are mathematical in nature, functions which contain errors will simply expand to '(0)' in addition to reporting the error.
+  */
+  while (find_function_in_line(s)) {
+    char *p = mymalloc(strlen(s)+2);
+    strcpy(p+1,s);
+    *p = '\0';
+    
+    d = cur_src->linebuf + 1;
+    len = cur_src->bufsize - 2;
+    s = p;
+    
+    while (*s!='\0') {
+      int nc = expand_function(cur_src,&s,d,len); /* attempt to expand function calls in the line */
+
+      if (nc > 0) {
+        /* expanded functions */
+        len -= nc;
+        d += nc;
+      }
+      else if (nc == 0) {
+        /* copy next character */
+        if (len > 0) {
+          *d++ = *s++;
+          len--;
+        }
+        else
+          nc = -1;
+      }
+
+      if (nc < 0) {
+        /* line buffer ran out of space, allocate a bigger one */
+        int offs = d - cur_src->linebuf;
+
+        /* double its size */
+        len += cur_src->bufsize;
+        cur_src->bufsize += cur_src->bufsize;
+        cur_src->linebuf = myrealloc(cur_src->linebuf,cur_src->bufsize);
+        d = cur_src->linebuf + offs;
+        if (debug)
+          printf("Doubled line buffer size to %lu bytes.\n",cur_src->bufsize);
+      }
+    }
+
+    *d = '\0';
+    s = cur_src->linebuf + 1;
+    myfree(p);
+  }
 
   if (listena && !skip_listing) {
     listing *new = new_listing(cur_src,cur_src->line);

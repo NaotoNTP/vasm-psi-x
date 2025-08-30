@@ -28,6 +28,8 @@ const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.3 by 'Naoto'";
    - Naoto
 */
 
+/* TODO: add back 'macro_arg_opts()' for the purposes of setting default argument values on macros. */
+
 hashtable *dirhash;
 char commentchar = ';';
 int blockcomment = 0;
@@ -91,9 +93,16 @@ static struct options {
   0,      /* WS - Allow White Spaces */
 };
 
-#define OPTSTACKSIZE 100
-static struct options options_stack[OPTSTACKSIZE];
-static int options_stack_index;
+#define OPT_STACK_SIZE 100
+static struct options options_stack[OPT_STACK_SIZE];
+static int options_stack_index = 0;
+
+/* function parameters */
+#define MAX_FUNC_ARGS 10
+
+static struct funcargs {
+  char* arg[MAX_FUNC_ARGS];
+} funcargs;
 
 static char *labname;  /* current label field for assignment directives */
 static unsigned anon_labno;
@@ -116,14 +125,14 @@ static char seconds_name[] = "_seconds";
 #define INLSTACKSIZE 100
 #define INLLABFMT "=%06d"
 static int inline_stack[INLSTACKSIZE];
-static int inline_stack_index;
+static int inline_stack_index = 0;
 static const char *saved_last_global_label;
 static char inl_lab_name[8];
 
 /* pushp/popp string stack */
 #define STRSTACKSIZE 100
 static char *string_stack[STRSTACKSIZE];
-static int string_stack_index;
+static int string_stack_index = 0;
 
 int isidstart(char c)
 {
@@ -1693,11 +1702,11 @@ static void handle_pusho(char *s)
 {
   s = skip(s);
 
-  if (options_stack_index < OPTSTACKSIZE) {
+  if (options_stack_index < OPT_STACK_SIZE) {
     options_stack[options_stack_index++] = options;
   }
   else {
-    syntax_error(36,OPTSTACKSIZE);  /* options stack capacity reached */
+    syntax_error(36,OPT_STACK_SIZE);  /* options stack capacity reached */
   }
   eol(s);
 }
@@ -2886,6 +2895,145 @@ int expand_ctrlparams(source *src,char **line,char *d,int dlen)
   return nc;  /* number of chars written to line buffer, -1: out of space */
 }
 
+int find_function_in_line(char *s)
+{
+  symbol *sym;
+  char *name;
+  
+  while (!ISEOL(s)) {
+    char *t = s;
+
+    if ((!ISIDSTART(*t-1)) && (!ISIDCHAR(*t-1))
+        && ((name = parse_symbol(&t)) && (*t == '('))
+        && ((sym = find_symbol(name)) && (sym->type == FUNCTION)))
+      return 1;
+
+    s++;
+  }
+
+  return 0;
+}
+
+int expand_function(source *src,char **line,char *d,int dlen)
+{
+  static strbuf expansion;
+  symbol *sym;
+  int nc = 0;
+  char *s = *line;
+  char *name;
+
+  if ((!ISIDSTART(*s-1)) && (!ISIDCHAR(*s-1)) && ((name = parse_symbol(&s)) && (*s == '(')))
+  {
+    if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
+      char *funcdef = sym->text;
+      char *args = skip(s+1);
+      taddr nargs;
+      int i, n;
+
+      eval_expr(sym->expr,&nargs,sym->sec,sym->pc);
+
+      /* parse and expand the function arguments passed to this call */
+      for (i=0; i<nargs; i++) {
+        int parenthDepth = 0;  /* depth of the current set of parenthesis */
+        char *end = args;
+        
+        while (*end != ',') {
+          if (ISEOL(end)) {
+            /* insert an error about unexpected EOL */
+
+            /* free the memory of any funcarg that we've allocated memory for */
+            for (n=0; n<i; n++)
+              myfree(funcargs.arg[n]);
+            return 0;
+          }
+
+          if (*end == '(')
+            parenthDepth++;      
+          else if (*end == ')') {
+            if (parenthDepth == 0) {
+              break;
+            }
+            parenthDepth--;
+          }
+          
+          if ((parenthDepth == 0) && (isspace((unsigned char )*s)))
+            break;
+          
+          end = skip(end+1);
+        }
+
+        funcargs.arg[i] = cnvstr(args,end-args);
+        end = skip(end);
+
+        if (*end == ')') {
+          if ((i+1) < nargs) {
+            /* insert an error about too few args */
+
+            /* free the memory of any funcarg that we've allocated memory for */
+            for (n=0; n<=i; n++)
+              myfree(funcargs.arg[n]);
+            return 0;
+          }
+
+          /* if the closing parenthesis is found and the number of arguments passed matches the expected amount, break out of the loop. */
+          s = end + 1;
+          break;
+        } else {
+          if ((i+1) == nargs) {
+            /* insert an error about no closing parenthesis on function */
+
+            /* free the memory of any funcarg that we've allocated memory for */
+            for (n=0; n<=i; n++)
+              myfree(funcargs.arg[n]);
+            return 0;
+          }
+        }
+
+        args = skip(end+1);
+      }
+
+      /* initialize the expansion buffer */
+      strbuf_alloc(&expansion,0x100);
+      expansion.str[0] = '\0';
+      expansion.len = 0;
+
+      /* append the opening parenthesis */
+      appendchar(&expansion,'(');
+
+      /* read through the function definition and print it to the expansion buffer, expanding the arguments as we go */
+      while (!ISEOL(funcdef)) {
+        if (*funcdef == '{') {
+          char *currarg;
+          
+          funcdef++;
+          currarg = funcargs.arg[*funcdef-'0'];
+          appendstr(&expansion,currarg);
+          funcdef++; /* skip the internal '}' character */
+        } else {
+          appendchar(&expansion,*funcdef);
+        }
+        funcdef++;
+      }
+
+      /* append the closing parenthesis */
+      appendchar(&expansion,')');
+
+      /* free all of the memory used for the function arguments */
+      for (i=0; i<nargs; i++)
+        myfree(funcargs.arg[i]);
+
+      /* finally, print the fully expanded function in place of the function call */
+      nc = sprintf(d,expansion.str);
+    }
+
+    if (nc >= dlen)
+      nc = -1;
+    else if (nc > 0)
+      *line = s;  /* update line pointer when expansion took place */
+  }
+
+  return nc;  /* number of chars written to line buffer, -1: out of space */
+}
 
 int init_syntax()
 {

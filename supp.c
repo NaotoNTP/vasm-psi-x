@@ -1,6 +1,7 @@
 /* supp.c miscellaneous support routines */
 /* (c) in 2008-2024 by Frank Wille */
 
+#include <string.h>
 #include <math.h>
 #include "vasm.h"
 #include "supp.h"
@@ -606,6 +607,23 @@ char *strbuf_alloc(strbuf *buf,size_t sz)
     buf->size = (sz+(STRBUFINC-1)) & ~(STRBUFINC-1);
     return buf->str = myrealloc(buf->str,buf->size);
   }
+  return buf->str;
+}
+
+/* ensure there is enough space to append this string to the specified string buffer*/
+char *appendstr(strbuf *buf,char *str)
+{
+  strbuf_alloc(buf,(buf->len+strlen(str)));
+  strcat(buf->str,str);
+  buf->len = strlen(buf->str);
+  return buf->str;
+}
+
+char *appendchar(strbuf *buf,char chr)
+{
+  strbuf_alloc(buf,(buf->len+1));
+  buf->str[buf->len++] = chr;
+  buf->str[buf->len] = 0;
   return buf->str;
 }
 

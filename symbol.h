@@ -9,6 +9,7 @@
 #define IMPORT 2
 #define EXPRESSION 3
 #define STRSYM 4
+#define FUNCTION 5
 
 /* symbol flags */
 #define TYPE_MASK     7

@@ -72,6 +72,8 @@ char *mystrdup(const char *);
 char *cnvstr(const char *,int);
 char *cutstr(strbuf *,const char *,size_t);
 char *strbuf_alloc(strbuf *,size_t);
+char *appendstr(strbuf *,char *);
+char *appendchar(strbuf *,char);
 char *strtolower(char *);
 int str_is_graph(const char *);
 const char *trim(const char *);

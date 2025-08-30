@@ -109,6 +109,8 @@ static int sym_valid(symbol *symp)
     return 0;  /* ignore internal/temporary symbols */
   if(symp->flags & VASMINTERN)
     return 0;  /* ignore vasm-internal symbols */
+	 if(symp->type == FUNCTION)
+    return 0;  /* ignore functions */
   return 1;
 }
 
