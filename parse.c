@@ -1378,7 +1378,7 @@ char *read_next_line(void)
     
     d = cur_src->linebuf + 1;
     len = cur_src->bufsize - 2;
-    s = p;
+    s = p + 1;
     
     while (*s!='\0') {
       int nc = expand_function(cur_src,&s,d,len); /* attempt to expand function calls in the line */

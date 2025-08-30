@@ -35,6 +35,8 @@ char commentchar = ';';
 int blockcomment = 0;
 int dotdirs;
 
+static char double_func[] = "{0}*2";
+
 /* default sections */
 static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
@@ -2899,14 +2901,17 @@ int find_function_in_line(char *s)
 {
   symbol *sym;
   char *name;
-  
+
   while (!ISEOL(s)) {
     char *t = s;
 
-    if ((!ISIDSTART(*t-1)) && (!ISIDCHAR(*t-1))
+    if ((!ISIDSTART(*(t-1))) && (!ISIDCHAR(*(t-1)))
         && ((name = parse_symbol(&t)) && (*t == '('))
-        && ((sym = find_symbol(name)) && (sym->type == FUNCTION)))
+        && ((sym = find_symbol(name)) && (sym->type == FUNCTION))) {
+
+      printf("Function FOUND!\n");
       return 1;
+    }
 
     s++;
   }
@@ -2922,7 +2927,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
   char *s = *line;
   char *name;
 
-  if ((!ISIDSTART(*s-1)) && (!ISIDCHAR(*s-1)) && ((name = parse_symbol(&s)) && (*s == '(')))
+  if ((!ISIDSTART(*(s-1))) && (!ISIDCHAR(*(s-1))) && ((name = parse_symbol(&s)) && (*s == '(')))
   {
     if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
       char *funcdef = sym->text;
@@ -2930,6 +2935,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
       taddr nargs;
       int i, n;
 
+      printf("expanding function...\n");
       eval_expr(sym->expr,&nargs,sym->sec,sym->pc);
 
       /* parse and expand the function arguments passed to this call */
@@ -3017,6 +3023,8 @@ int expand_function(source *src,char **line,char *d,int dlen)
 
       /* append the closing parenthesis */
       appendchar(&expansion,')');
+
+      printf("%s\n",expansion.str);
 
       /* free all of the memory used for the function arguments */
       for (i=0; i<nargs; i++)
@@ -3110,6 +3118,14 @@ int init_syntax()
   sym = internal_abs(seconds_name);
   set_internal_abs(seconds_name,date.tm_sec);
   sym->flags |= EQUATE;
+
+  /* test function definition */
+  /*
+  sym = internal_abs("double");
+  set_internal_abs("double",1);
+  sym->text = double_func;
+  sym->type = FUNCTION;
+  */
 
   return 1;
 }
