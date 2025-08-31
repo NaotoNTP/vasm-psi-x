@@ -40,3 +40,12 @@
 	"unrecognized option given",WARNING,																			/* 35 */
 	"options stack capacity reached (%d)",ERROR,															/* 36 */
 	"options stack is empty",ERROR,																						/* 37 */
+
+  "too many arguments specified (maximum of %d allowed)",ERROR,                     /* 38 */
+  "functions must accept at least 1 argument",ERROR,			                          /* 39 */
+  "function definitions must be enclosed with curly braces (missing \"%c\")",ERROR,	/* 40 */
+  "unexpected end of line",ERROR,                                                   /* 41 */
+  "function call is missing arguments (expected %d, got %d)",ERROR,                 /* 42 */
+  "expected closing parenthesis after argument %d in function call",ERROR,          /* 43 */
+  "duplicate argument name in function declaration \"%s\"",ERROR,          					/* 44 */
+  

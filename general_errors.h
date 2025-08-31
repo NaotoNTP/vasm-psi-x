@@ -88,8 +88,9 @@
   "additional macro arguments ignored (expecting %d)",WARNING,
   "macro previously defined at line %d of %s",WARNING,
   "symbol <%s> cannot be redefined as a string symbol",ERROR,
-  "internal symbol <%s> not found",ERROR,						/* 90 */
+  "internal symbol <%s> not found",ERROR,                       /* 90 */
   "odd number of nybbles given",ERROR,
   "maximum number of loop iterations (%d) reached",ERROR,
   "missing loop condition",ERROR,
+  "symbol <%s> cannot be redefined as a function",ERROR,
 

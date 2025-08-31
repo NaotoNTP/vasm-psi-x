@@ -32,7 +32,7 @@ static void print_type(FILE *f,symbol *p)
 void print_symbol(FILE *f,symbol *p)
 {
   if (p == NULL)
-    ierror(0);	/* this is usually an error in a cpu-backend, don't crash! */
+    ierror(0);  /* this is usually an error in a cpu-backend, don't crash! */
 
   fprintf(f,"%s ",p->name);
 
@@ -411,13 +411,13 @@ expr *set_internal_abs(const char *name,taddr newval)
 /* remove an internal symbol from the hash table */
 int undef_internal_sym(const char *name,int no_case)
 {
-	symbol *sym = find_symbol(name);
+  symbol *sym = find_symbol(name);
 
   if (sym != NULL) {
-		if (sym->flags & VASMINTERN) {
+    if (sym->flags & VASMINTERN) {
       rem_hashentry(symhash,name,no_case);
       return 1;
-		}
+    }
   }
   else
     general_error(90,name);  /* internal symbol not found */
@@ -520,11 +520,11 @@ symbol *new_strsym(char *name,char *text)
   if (new) {
     if (new->flags&EQUATE)
       general_error(67,name); /* repeatedly defined symbol (error) */
-		if (new->type != STRSYM)
-			general_error(89,name); /* symbol cannot be redefined as a string symbol */
+    if (new->type != STRSYM)
+      general_error(89,name); /* symbol cannot be redefined as a string symbol */
     else
-			myfree(new->text);
-		add = 0;
+      myfree(new->text);
+    add = 0;
   }
   else {
     new = mymalloc(sizeof(*new));
@@ -534,8 +534,43 @@ symbol *new_strsym(char *name,char *text)
 
   new->type = STRSYM;
   new->sec = 0;
-	new->expr = number_expr(strlen(text));
+  new->expr = number_expr(strlen(text));
   new->text = mystrdup(text);
+
+  if (add) {
+    add_symbol(new);
+    new->flags = 0;
+    new->size = 0;
+    new->align = 0;
+  }
+
+  return new;
+}
+
+symbol *new_function(char *name,char *def,int nargs)
+{
+  symbol *new = find_symbol(name);
+  int add;
+
+  if (new) {
+    if (new->flags&EQUATE)
+      general_error(67,name); /* repeatedly defined symbol (error) */
+    if (new->type != FUNCTION)
+      general_error(94,name); /* symbol cannot be redefined as a function */
+    else
+      myfree(new->text);
+    add = 0;
+  }
+  else {
+    new = mymalloc(sizeof(*new));
+    new->name = mystrdup(name);
+    add = 1;
+  }
+
+  new->type = FUNCTION;
+  new->sec = 0;
+  new->expr = number_expr(nargs);
+  new->text = mystrdup(def);
 
   if (add) {
     add_symbol(new);

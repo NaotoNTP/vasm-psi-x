@@ -102,6 +102,7 @@ int undef_regsym(const char *,int,int);
 #endif /* HAVE_REGSYMS */
 
 symbol *new_strsym(char *,char *);
+symbol *new_function(char *,char *,int);
 
 int init_symbol(void);
 void exit_symbol(void);

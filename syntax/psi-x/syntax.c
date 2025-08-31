@@ -100,7 +100,7 @@ static struct options options_stack[OPT_STACK_SIZE];
 static int options_stack_index = 0;
 
 /* function parameters */
-#define MAX_FUNC_ARGS 10
+#define MAX_FUNC_ARGS 32
 
 static struct funcargs {
   char* arg[MAX_FUNC_ARGS];
@@ -1746,6 +1746,7 @@ struct {
   "alias",handle_absentid,
   "equ",handle_absentid,
   "equs",handle_absentid,
+  "func",handle_absentid,
   "macro",handle_absentid,
   "macros",handle_absentid,
 #if !defined(VASM_CPU_Z80)
@@ -2219,6 +2220,155 @@ void parse(void)
             syntax_error(28); /* quoted string or string symbol expected in operand */
           }
 
+          eol(s);
+          continue;
+        }
+        else if (!strnicmp(s,"func",4) && isspace((unsigned char)*(s+4))) {
+          static strbuf funcdef;
+          strbuf *buf;
+          symbol *sym;
+          int nargs = 0;
+          int i, defined;
+
+          s = skip(s+4);
+
+          while (buf = parse_identifier(1,&s)) {
+            if (nargs == MAX_FUNC_ARGS) {
+              syntax_error(38,MAX_FUNC_ARGS);
+              goto _ERROR_; /* this breaks out of the current loop, frees the memory use by args, and continues the line reading loop */
+            }
+
+            if (nargs) {
+              for (i=0; i<nargs; i++) {
+                if (strlen(funcargs.arg[i])==strlen(buf->str)) {
+                  if ((nocase && (!strnicmp(funcargs.arg[i],buf->str,strlen(buf->str)))) || (!strncmp(funcargs.arg[i],buf->str,strlen(buf->str)))) {
+                    syntax_error(44,buf->str);
+                    goto _ERROR_;
+                  }
+                }
+              }
+            }
+
+            funcargs.arg[nargs] = mystrdup(buf->str);
+            nargs++;
+
+            s = skip(s);
+            if (*s != ',')
+              break;
+            s = skip(s+1);
+          }
+
+          if (nargs == 0) {
+            syntax_error(39);
+            continue;
+          }
+
+          if (*s != '{') {
+            syntax_error(40,'{');
+            
+            _ERROR_:
+            if (nargs) {
+              for (i=0; i<nargs; i++)
+                myfree(funcargs.arg[i]);
+            }
+
+            continue;
+          }
+
+          s = skip(s+1);
+            
+          /* initialize the function definition buffer */
+          strbuf_alloc(&funcdef,0x100);
+          funcdef.str[0] = '\0';
+          funcdef.len = 0;
+
+          /* loop through the whole function definition, tokenizing arguments as we go */
+          while (*s != '}')  {
+            char *end;
+            defined = 1;
+
+            if (ISEOL(s)) {
+              syntax_error(40,'}');
+              goto _ERROR_;
+            } 
+            else if (*s == '\\') {
+              s++;
+
+              if ((end = skip_identifier(s)) != NULL) {
+                size_t len = (end-s);
+                char *id = cnvstr(s,len);
+                int found = 0;
+
+                for (i=0; i<nargs; i++) {
+                  if (strlen(funcargs.arg[i])==len) {
+                    if ((nocase && (!strnicmp(funcargs.arg[i],id,len))) || (!strncmp(funcargs.arg[i],id,len))) {
+                      found = 1;
+                      break;
+                    }
+                  }
+                }
+
+                /* if the identifier we read matches the name of an argument, tokenize it in the function definition */
+                if (found) {
+                  appendchar(&funcdef,'{');
+                  appendchar(&funcdef,(i+'0'));
+                  appendchar(&funcdef,'}');
+                }
+                else
+                  appendstr(&funcdef,id);
+
+                s = end;
+
+                /* skip terminating '\' if present */
+                if (*s == '\\')
+                  s++;
+
+                myfree(id);
+              }
+              else
+                appendchar(&funcdef,'\\');
+            }
+            else if ((end = skip_identifier(s)) != NULL) {
+              size_t len = (end-s);
+              char *id = cnvstr(s,len);
+              int found = 0;
+
+              for (i=0; i<nargs; i++) {
+                if (strlen(funcargs.arg[i])==len) {
+                  if ((nocase && (!strnicmp(funcargs.arg[i],id,len))) || (!strncmp(funcargs.arg[i],id,len))) {
+                    found = 1;
+                    break;
+                  }
+                }
+              }
+
+              /* if the identifier we read matches the name of an argument, tokenize it in the function definition */
+              if (found) {
+                appendchar(&funcdef,'{');
+                appendchar(&funcdef,(i+'0'));
+                appendchar(&funcdef,'}');
+              }
+              else
+                appendstr(&funcdef,id);
+
+              s = end;
+              myfree(id);
+            }
+            else {
+              appendchar(&funcdef,*s);
+              s++;
+            }
+          }
+
+          new_function(labname,funcdef.str,nargs);
+
+          /* free all of the memory used for the function arguments */
+          if (nargs) {
+            for (i=0; i<nargs; i++)
+              myfree(funcargs.arg[i]);
+          }
+
+          s = skip(s+1);
           eol(s);
           continue;
         }
@@ -2909,7 +3059,6 @@ int find_function_in_line(char *s)
         && ((name = parse_symbol(&t)) && (*t == '('))
         && ((sym = find_symbol(name)) && (sym->type == FUNCTION))) {
 
-      printf("Function FOUND!\n");
       return 1;
     }
 
@@ -2935,7 +3084,6 @@ int expand_function(source *src,char **line,char *d,int dlen)
       taddr nargs;
       int i, n;
 
-      printf("expanding function...\n");
       eval_expr(sym->expr,&nargs,sym->sec,sym->pc);
 
       /* parse and expand the function arguments passed to this call */
@@ -2945,12 +3093,15 @@ int expand_function(source *src,char **line,char *d,int dlen)
         
         while (*end != ',') {
           if (ISEOL(end)) {
-            /* insert an error about unexpected EOL */
+            syntax_error(41); /* unexpected EOL */
 
             /* free the memory of any funcarg that we've allocated memory for */
             for (n=0; n<i; n++)
               myfree(funcargs.arg[n]);
-            return 0;
+              
+            s = end;
+            nc = sprintf(d,"(0)");
+            goto _EXIT_;
           }
 
           if (*end == '(')
@@ -2972,26 +3123,31 @@ int expand_function(source *src,char **line,char *d,int dlen)
         end = skip(end);
 
         if (*end == ')') {
+          s = end + 1;
+
           if ((i+1) < nargs) {
-            /* insert an error about too few args */
+            syntax_error(42,nargs,i+1); /* too few args */
 
             /* free the memory of any funcarg that we've allocated memory for */
             for (n=0; n<=i; n++)
               myfree(funcargs.arg[n]);
-            return 0;
+
+            nc = sprintf(d,"(0)");
+            goto _EXIT_;
           }
 
           /* if the closing parenthesis is found and the number of arguments passed matches the expected amount, break out of the loop. */
-          s = end + 1;
           break;
         } else {
           if ((i+1) == nargs) {
-            /* insert an error about no closing parenthesis on function */
+            syntax_error(43,nargs); /* no closing parenthesis on function */
 
             /* free the memory of any funcarg that we've allocated memory for */
             for (n=0; n<=i; n++)
               myfree(funcargs.arg[n]);
-            return 0;
+            
+            nc = sprintf(d,"(0)");
+            goto _EXIT_;
           }
         }
 
@@ -3012,9 +3168,12 @@ int expand_function(source *src,char **line,char *d,int dlen)
           char *currarg;
           
           funcdef++;
-          currarg = funcargs.arg[*funcdef-'0'];
-          appendstr(&expansion,currarg);
-          funcdef++; /* skip the internal '}' character */
+          /* this if statement should always hold true, but it's here just in case */
+          if ((*funcdef-'0') < nargs) {
+            currarg = funcargs.arg[*funcdef-'0'];
+            appendstr(&expansion,currarg);
+          }
+          funcdef++;
         } else {
           appendchar(&expansion,*funcdef);
         }
@@ -3024,8 +3183,6 @@ int expand_function(source *src,char **line,char *d,int dlen)
       /* append the closing parenthesis */
       appendchar(&expansion,')');
 
-      printf("%s\n",expansion.str);
-
       /* free all of the memory used for the function arguments */
       for (i=0; i<nargs; i++)
         myfree(funcargs.arg[i]);
@@ -3034,6 +3191,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
       nc = sprintf(d,expansion.str);
     }
 
+    _EXIT_:
     if (nc >= dlen)
       nc = -1;
     else if (nc > 0)
