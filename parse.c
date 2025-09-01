@@ -1363,6 +1363,13 @@ char *read_next_line(void)
   cur_src->srcptr = s;
   s = cur_src->linebuf+1;
 
+  if (listena && !skip_listing) {
+    listing *new = new_listing(cur_src,cur_src->line);
+
+    strncpy(new->txt,s,MAXLISTSRC);
+    new->txt[MAXLISTSRC-1] = '\0';
+  }
+
   /*
     At this point in the code, we will have a while loop that checks for the presence of functions in the line buffer (calls a function that returns true or false to do this).
     If one is detected, it will copy the current line buffer and iterate over it, expanding each function as it goes and overwriting the old line buffer. Once this first
@@ -1417,12 +1424,6 @@ char *read_next_line(void)
     myfree(p);
   }
 
-  if (listena && !skip_listing) {
-    listing *new = new_listing(cur_src,cur_src->line);
-
-    strncpy(new->txt,s,MAXLISTSRC);
-    new->txt[MAXLISTSRC-1] = '\0';
-  }
   if (rept_end)
     start_repeat(rept_end);
   return s;

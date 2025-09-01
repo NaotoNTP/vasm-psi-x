@@ -3066,6 +3066,30 @@ int find_function_in_line(char *s)
   return 0;
 }
 
+char *skip_function_call_args(char *s) {
+  while (!ISEOL(s)) {
+    int parenthDepth = 0;  /* depth of the current set of parenthesis */
+
+    if (*s == '(')
+      parenthDepth++;      
+    else if (*s == ')') {
+      if (parenthDepth == 0) {
+        break;
+      }
+      parenthDepth--;
+    }
+
+    s = skip(s+1);
+  }
+
+  if (ISEOL(s))
+    syntax_error(41); /* unexpected EOL */
+  else
+    s++;
+  
+  return s;
+}
+
 int expand_function(source *src,char **line,char *d,int dlen)
 {
   static strbuf expansion;
@@ -3075,8 +3099,74 @@ int expand_function(source *src,char **line,char *d,int dlen)
   char *name;
 
   if ((!ISIDSTART(*(s-1))) && (!ISIDCHAR(*(s-1))) && ((name = parse_symbol(&s)) && (*s == '(')))
-  {
-    if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
+  { 
+    if ((nocase && (!strnicmp(name,"def",3))) || (!strncmp(name,"def",3))) {
+      int result = 0;
+      char *args;
+
+      s = skip(s+1);
+      args = s;
+
+      if (name = parse_symbol(&s)) {
+        if (sym = find_symbol(name))
+          result = (sym->type != IMPORT);
+      }
+      else {
+        syntax_error(10);  /* identifier expected */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        goto _EXIT_;
+      }
+      
+      s = skip(s);
+
+      if (*s == ')') {
+        nc = sprintf(d,"(%d)",BOOLEAN(result));
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+      }
+    }
+    else if ((nocase && (!strnicmp(name,"ref",3))) || (!strncmp(name,"ref",3))) {
+      int result = 0;
+      char *args;
+
+      s = skip(s+1);
+      args = s;
+
+      if (name = parse_symbol(&s)) {
+        if (sym = find_symbol(name))
+          result = (sym->type == IMPORT);
+        else
+          result = 1;
+      }
+      else {
+        syntax_error(10);  /* identifier expected */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        goto _EXIT_;
+      }
+      
+      s = skip(s);
+
+      if (*s == ')') {
+        nc = sprintf(d,"(%d)",BOOLEAN(result));
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+      }
+    }
+    else if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
       char *funcdef = sym->text;
       char *args = skip(s+1);
       taddr nargs;
@@ -3138,7 +3228,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
           break;
         } else {
           if ((i+1) == nargs) {
-            syntax_error(43,nargs); /* no closing parenthesis on function */
+            syntax_error(43); /* generic error in function call */
 
             /* free the memory of any funcarg that we've allocated memory for */
             for (n=0; n<=i; n++)
@@ -3228,6 +3318,12 @@ int init_syntax()
   
   sym = internal_abs(rs_name);
   refer_symbol(sym,"__rs");
+
+  /* define built-in functions */
+  sym = internal_abs("def");
+  sym->type = FUNCTION;
+  sym = internal_abs("ref");
+  sym->type = FUNCTION;
 
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;

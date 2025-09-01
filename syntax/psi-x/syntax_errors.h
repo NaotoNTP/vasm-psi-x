@@ -46,6 +46,6 @@
   "function definitions must be enclosed with curly braces (missing \"%c\")",ERROR,	/* 40 */
   "unexpected end of line",ERROR,                                                   /* 41 */
   "function call is missing arguments (expected %d, got %d)",ERROR,                 /* 42 */
-  "expected closing parenthesis after argument %d in function call",ERROR,          /* 43 */
+  "error in function call",ERROR,          																					/* 43 */
   "duplicate argument name in function declaration \"%s\"",ERROR,          					/* 44 */
   
