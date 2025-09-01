@@ -13,7 +13,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.2.3 by 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.3.0-pre by 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -3057,10 +3057,8 @@ int find_function_in_line(char *s)
 
     if ((!ISIDSTART(*(t-1))) && (!ISIDCHAR(*(t-1)))
         && ((name = parse_symbol(&t)) && (*t == '('))
-        && ((sym = find_symbol(name)) && (sym->type == FUNCTION))) {
-
+        && ((sym = find_symbol(name)) && (sym->type == FUNCTION)))
       return 1;
-    }
 
     s++;
   }
@@ -3276,14 +3274,6 @@ int init_syntax()
   sym = internal_abs(seconds_name);
   set_internal_abs(seconds_name,date.tm_sec);
   sym->flags |= EQUATE;
-
-  /* test function definition */
-  /*
-  sym = internal_abs("double");
-  set_internal_abs("double",1);
-  sym->text = double_func;
-  sym->type = FUNCTION;
-  */
 
   return 1;
 }
