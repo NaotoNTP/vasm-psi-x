@@ -3166,6 +3166,160 @@ int expand_function(source *src,char **line,char *d,int dlen)
         nc = sprintf(d,"(0)");
       }
     }
+    else if ((nocase && (!strnicmp(name,"strlen",6))) || (!strncmp(name,"strlen",6))) {
+      int result = 0;
+      strbuf *buf;
+      char *args;
+
+      s = skip(s+1);
+      args = s;
+
+      if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        result = buf->len;
+      }
+      else {
+        syntax_error(28); /* quoted string or string symbol expected in operand */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        goto _EXIT_;
+      }
+      
+      s = skip(s);
+
+      if (*s == ')') {
+        nc = sprintf(d,"(%d)",result);
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+      }
+    }
+    else if ((nocase && (!strnicmp(name,"strcmp",6))) || (!strncmp(name,"strcmp",6))) {
+      int result = 0;
+      strbuf *buf;
+      char *args, *texta;
+
+      s = skip(s+1);
+      args = s;
+
+      /* text a */
+      if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        texta = mystrdup(buf->str);
+      }
+      else {
+        syntax_error(28); /* quoted string or string symbol expected in operand */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        goto _EXIT_;
+      }
+      
+      s = skip(s);
+
+      if (*s != ',') {
+        syntax_error(42,2,1); /* too few arguments */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+        myfree(texta);
+        goto _EXIT_;
+      }
+
+      s = skip(s+1);
+
+      /* text b */
+      if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        if (!strcmp(texta,buf->str))
+          result = -1;
+        else
+          result = 0;
+      }
+      else {
+        syntax_error(28); /* quoted string or string symbol expected in operand */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        myfree(texta);
+        goto _EXIT_;
+      }
+
+      if (*s == ')') {
+        nc = sprintf(d,"(%d)",result);
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+        myfree(texta);
+      }
+    }
+    else if ((nocase && (!strnicmp(name,"stricmp",7))) || (!strncmp(name,"stricmp",7))) {
+      int result = 0;
+      strbuf *buf;
+      char *args, *texta;
+
+      s = skip(s+1);
+      args = s;
+
+      /* text a */
+      if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        texta = mystrdup(buf->str);
+      }
+      else {
+        syntax_error(28); /* quoted string or string symbol expected in operand */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        goto _EXIT_;
+      }
+      
+      s = skip(s);
+
+      if (*s != ',') {
+        syntax_error(42,2,1); /* too few arguments */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+        myfree(texta);
+        goto _EXIT_;
+      }
+
+      s = skip(s+1);
+
+      /* text b */
+      if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        if (!stricmp(texta,buf->str))
+          result = -1;
+        else
+          result = 0;
+      }
+      else {
+        syntax_error(28); /* quoted string or string symbol expected in operand */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        myfree(texta);
+        goto _EXIT_;
+      }
+
+      if (*s == ')') {
+        nc = sprintf(d,"(%d)",result);
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+        myfree(texta);
+      }
+    }
     else if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
       char *funcdef = sym->text;
       char *args = skip(s+1);
@@ -3319,12 +3473,6 @@ int init_syntax()
   sym = internal_abs(rs_name);
   refer_symbol(sym,"__rs");
 
-  /* define built-in functions */
-  sym = internal_abs("def");
-  sym->type = FUNCTION;
-  sym = internal_abs("ref");
-  sym->type = FUNCTION;
-
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;
@@ -3370,6 +3518,18 @@ int init_syntax()
   sym = internal_abs(seconds_name);
   set_internal_abs(seconds_name,date.tm_sec);
   sym->flags |= EQUATE;
+
+  /* define built-in functions */
+  sym = internal_abs("def");
+  sym->type = FUNCTION;
+  sym = internal_abs("ref");
+  sym->type = FUNCTION;
+  sym = internal_abs("strlen");
+  sym->type = FUNCTION;
+  sym = internal_abs("strcmp");
+  sym->type = FUNCTION;
+  sym = internal_abs("stricmp");
+  sym->type = FUNCTION;
 
   return 1;
 }
