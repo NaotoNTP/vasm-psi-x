@@ -2458,7 +2458,7 @@ void parse(void)
             start = 0;
           }
           else {
-            start = parse_constexpr(&s);
+            start = (parse_constexpr(&s)) - 1;
             if (start < 0) {
               syntax_error(29); /* substring index must be positive */
               continue;
@@ -2494,25 +2494,29 @@ void parse(void)
             continue;
           }
           s = skip(s+1);
+          
+          text = s;
 
-          if ((buf = get_local_label(1,&s)) || (buf = parse_identifier(1,&s))) {
+          /* duplicate the string data */
+          if ((buf = get_local_label(1,&text)) || (buf = parse_identifier(1,&text))) {
+            s = text;
+            
             if (!(sym = find_symbol(buf->str)) && !(sym->type == STRSYM)) {
               syntax_error(27,buf->str); /* string symbol not found */
               eol(s);
               continue;
             }
+
+            text = mystrdup(sym->text);
           }
-          else if (!(buf = parse_name(1,&s))) {
+          else if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+            text = mystrdup(buf->str);
+          }
+          else {
             syntax_error(28); /* quoted string or string symbol expected in operand */
             eol(s);
             continue;
           }
-
-          /* duplicate the string data */
-          if (sym)
-            text = mystrdup(sym->text);
-          else
-            text = mystrdup(buf->str);
 
           /* get the copy length and set the ending position if necessary */
           if (end < 0)
@@ -3247,6 +3251,8 @@ int expand_function(source *src,char **line,char *d,int dlen)
         goto _EXIT_;
       }
 
+      s = skip(s);
+
       if (*s == ')') {
         nc = sprintf(d,"(%d)",result);
         s++;
@@ -3308,6 +3314,8 @@ int expand_function(source *src,char **line,char *d,int dlen)
         goto _EXIT_;
       }
 
+      s = skip(s);
+
       if (*s == ')') {
         nc = sprintf(d,"(%d)",result);
         s++;
@@ -3318,6 +3326,99 @@ int expand_function(source *src,char **line,char *d,int dlen)
         s = skip_function_call_args(s);        
         nc = sprintf(d,"(0)");
         myfree(texta);
+      }
+    }
+    else if ((nocase && (!strnicmp(name,"instr",5))) || (!strncmp(name,"instr",7))) {
+      int result = 0, start = 0;
+      strbuf *buf;
+      char *args, *string;
+
+      s = skip(s+1);
+      args = s;
+
+      /* parse start index parameter (if present) */
+      if ((*s != '\"') && (*s != '\'')) {
+        start = parse_constexpr(&s);
+        
+        if (start <= 0) {
+          syntax_error(29); /* substring index must be positive */
+
+          s = skip_function_call_args(s);        
+          nc = sprintf(d,"(0)");
+          goto _EXIT_;
+        }
+
+        s = skip(s);
+
+        if (*s != ',') {
+          syntax_error(42,3,1); /* too few arguments */
+
+          s = skip_function_call_args(s);        
+          nc = sprintf(d,"(0)");
+          goto _EXIT_;
+        }
+
+        s = skip(s+1);
+      }
+
+      /* parse the main string parameter */
+      if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        string = mystrdup(buf->str);
+      }
+      else {
+        syntax_error(28); /* quoted string or string symbol expected in operand */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        goto _EXIT_;
+      }
+
+      s = skip(s);
+
+      if (*s != ',') {
+        if (start)
+          syntax_error(42,3,1); /* too few arguments */
+        else
+          syntax_error(42,2,1); /* too few arguments */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+        myfree(string);
+        goto _EXIT_;
+      }
+
+      s = skip(s+1);
+
+      /* parse the substring parameter and determine the function's output value */
+      if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        char *found = strstr((string + start - 1),buf->str);
+        
+        if (found)
+          result = found - string + 1;
+        else
+          result = 0;
+      }
+      else {
+        syntax_error(28); /* quoted string or string symbol expected in operand */
+        
+        s = skip_function_call_args(args);
+        nc = sprintf(d,"(0)");
+        myfree(string);
+        goto _EXIT_;
+      }
+
+      s = skip(s);
+
+      if (*s == ')') {
+        nc = sprintf(d,"(%d)",result);
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(0)");
+        myfree(string);
       }
     }
     else if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
@@ -3529,6 +3630,8 @@ int init_syntax()
   sym = internal_abs("strcmp");
   sym->type = FUNCTION;
   sym = internal_abs("stricmp");
+  sym->type = FUNCTION;
+  sym = internal_abs("instr");
   sym->type = FUNCTION;
 
   return 1;
