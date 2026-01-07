@@ -1,7 +1,8 @@
 /* syntax.c  syntax module for vasm */
 /* by 'Naoto' 2025 */
 
-#include "time.h"
+#include <math.h>
+#include <time.h>
 #include "vasm.h"
 
 /* The syntax module parses the input (read_next_line), handles
@@ -3198,7 +3199,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
       else {
         syntax_error(43); /* generic error in function call */
         
-        s = skip_function_call_args(s);        
+        s = skip_function_call_args(args);        
         nc = sprintf(d,"(0)");
       }
     }
@@ -3227,7 +3228,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
       if (*s != ',') {
         syntax_error(42,2,1); /* too few arguments */
         
-        s = skip_function_call_args(s);        
+        s = skip_function_call_args(args);        
         nc = sprintf(d,"(0)");
         myfree(texta);
         goto _EXIT_;
@@ -3260,7 +3261,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
       else {
         syntax_error(43); /* generic error in function call */
         
-        s = skip_function_call_args(s);        
+        s = skip_function_call_args(args);        
         nc = sprintf(d,"(0)");
         myfree(texta);
       }
@@ -3290,7 +3291,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
       if (*s != ',') {
         syntax_error(42,2,1); /* too few arguments */
         
-        s = skip_function_call_args(s);        
+        s = skip_function_call_args(args);        
         nc = sprintf(d,"(0)");
         myfree(texta);
         goto _EXIT_;
@@ -3323,12 +3324,12 @@ int expand_function(source *src,char **line,char *d,int dlen)
       else {
         syntax_error(43); /* generic error in function call */
         
-        s = skip_function_call_args(s);        
+        s = skip_function_call_args(args);        
         nc = sprintf(d,"(0)");
         myfree(texta);
       }
     }
-    else if ((nocase && (!strnicmp(name,"instr",5))) || (!strncmp(name,"instr",7))) {
+    else if ((nocase && (!strnicmp(name,"instr",5))) || (!strncmp(name,"instr",5))) {
       int result = 0, start = 0;
       strbuf *buf;
       char *args, *string;
@@ -3343,7 +3344,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
         if (start <= 0) {
           syntax_error(29); /* substring index must be positive */
 
-          s = skip_function_call_args(s);        
+          s = skip_function_call_args(args);        
           nc = sprintf(d,"(0)");
           goto _EXIT_;
         }
@@ -3353,7 +3354,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
         if (*s != ',') {
           syntax_error(42,3,1); /* too few arguments */
 
-          s = skip_function_call_args(s);        
+          s = skip_function_call_args(args);        
           nc = sprintf(d,"(0)");
           goto _EXIT_;
         }
@@ -3381,7 +3382,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
         else
           syntax_error(42,2,1); /* too few arguments */
         
-        s = skip_function_call_args(s);        
+        s = skip_function_call_args(args);        
         nc = sprintf(d,"(0)");
         myfree(string);
         goto _EXIT_;
@@ -3416,9 +3417,33 @@ int expand_function(source *src,char **line,char *d,int dlen)
       else {
         syntax_error(43); /* generic error in function call */
         
-        s = skip_function_call_args(s);        
+        s = skip_function_call_args(args);        
         nc = sprintf(d,"(0)");
         myfree(string);
+      }
+    }
+    else if ((nocase && (!strnicmp(name,"sqrt",4))) || (!strncmp(name,"sqrt",4))) {
+      int64_t result;
+      strbuf *buf;
+
+      s = skip(s+1);
+      result = parse_constexpr(&s);
+
+      if (result < 0)
+        result = UINT32_MAX + result + 1;
+
+      result = (int)(sqrt((double)(result)));
+      nc = sprintf(d,"(%d)",result);
+
+      s = skip(s);
+
+      if (*s == ')') {
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);
       }
     }
     else if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
@@ -3632,6 +3657,8 @@ int init_syntax()
   sym = internal_abs("stricmp");
   sym->type = FUNCTION;
   sym = internal_abs("instr");
+  sym->type = FUNCTION;
+  sym = internal_abs("sqrt");
   sym->type = FUNCTION;
 
   return 1;
