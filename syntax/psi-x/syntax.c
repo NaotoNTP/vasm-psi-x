@@ -15,7 +15,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.3.0-pre by 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.3.0 by 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -36,8 +36,6 @@ hashtable *dirhash;
 char commentchar = ';';
 int blockcomment = 0;
 int dotdirs;
-
-static char double_func[] = "{0}*2";
 
 /* default sections */
 static char code_name[] = "CODE",code_type[] = "acrx";
@@ -3331,7 +3329,7 @@ int expand_function(source *src,char **line,char *d,int dlen)
       }
     }
     else if ((nocase && (!strnicmp(name,"instr",5))) || (!strncmp(name,"instr",5))) {
-      int result = 0, start = 0;
+      int result = 0, start = 1;
       strbuf *buf;
       char *args, *string;
 
@@ -3365,6 +3363,14 @@ int expand_function(source *src,char **line,char *d,int dlen)
 
       /* parse the main string parameter */
       if (((*s == '\"') && (buf = get_raw_string(&s,'\"'))) || ((*s == '\'') && (buf = get_raw_string(&s,'\'')))) {
+        if (start >= buf->len) {
+          syntax_error(46); /* start index greater than string length */
+
+          s = skip_function_call_args(args);        
+          nc = sprintf(d,"(0)");
+          goto _EXIT_;
+        }
+
         string = mystrdup(buf->str);
       }
       else {
@@ -3374,7 +3380,6 @@ int expand_function(source *src,char **line,char *d,int dlen)
         nc = sprintf(d,"(0)");
         goto _EXIT_;
       }
-
       s = skip(s);
 
       if (*s != ',') {

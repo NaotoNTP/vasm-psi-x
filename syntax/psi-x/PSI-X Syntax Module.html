@@ -133,7 +133,7 @@ directive for conditional assembly (if, else, endif, etc.), as this is not suppo
 <p>Comments are introduced by the comment character (<code>;</code>). The assembler will attempt 
 to issue a warning if a comment is introduced at the end of a line without the comment character,
 but this is not guaranteed. Additionally, lisp-style multi-line comment blocks are supported (invoked with ’<code>#||</code>’ and terminated with ’<code>||#</code>’):
-<p>Examples:
+</p><p>Examples:
 </p><div class="example">
 <pre class="example">label:	instr.q	op1,op2	; comment</pre>
 <pre class="example"> </pre>
@@ -263,7 +263,7 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>db &lt;exp1&gt;[,&lt;exp2&gt;,&quot;&lt;str1&gt;&quot;,'&lt;str2&gt;'...]</code></dt>
+<dt><code>db &lt;exp1&gt;[,&lt;exp2&gt;,"&lt;str1&gt;",'&lt;str2&gt;'...]</code></dt>
 <dt><code>dw &lt;exp1&gt;[,&lt;exp2&gt;...]</code></dt>
 <dt><code>dl &lt;exp1&gt;[,&lt;exp2&gt;...]</code></dt>
 <dd><p>      Z80/6502 declare constant directives. Assigns the constant integer values of the list of operands 
@@ -273,7 +273,7 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>dc[.&lt;sz&gt;] &lt;exp1&gt;[,&lt;exp2&gt;,&quot;&lt;str1&gt;&quot;,'&lt;str2&gt;'...]</code></dt>
+<dt><code>dc[.&lt;sz&gt;] &lt;exp1&gt;[,&lt;exp2&gt;,"&lt;str1&gt;",'&lt;str2&gt;'...]</code></dt>
 <dd><p>      M68K declare constant directive. Assigns the constant integer values of the list of operands 
 	into successive bytes of memory within the current section. <code>&lt;sz&gt;</code> defaults to <code>w</code> when not specified.
 	When a <code>&lt;sz&gt;</code> of <code>b</code> is specified, strings can also be given as operands.
@@ -404,6 +404,12 @@ CPU- and output-module allow it):
 <dt><code>fail</code></dt>
 <dd><p>      Throw a fatal error and stop assembly immediately; do not generate
 	an output file.
+</p>
+</dd>
+
+<dt><code>&lt;name&gt; func [&lt;argname1&gt;[,&lt;argname2&gt;...]] {&lt;expression&gt;}</code></dt>
+<dd><p>      Declare a user defined function called <code>&lt;name&gt;</code> which will resolve to <code>&lt;expression&gt;</code>
+	when called and passed a list of arguments. See the additional section titled "Functions" for more information.
 </p>
 </dd>
 
@@ -596,7 +602,7 @@ CPU- and output-module allow it):
 	may also be specified to separate the macro argument from any surrounding text: <code>\argname\</code>
 	In addition to named arguments, up to 9 numbered arguments passed during a macro call can be 
 	referenced within the macro context as <code>\1</code> to <code>\9</code>. 
-	A special argument, <code>\0</code>, is set to the macro&rsquo;s first qualifier 
+	A special argument, <code>\0</code>, is set to the macro’s first qualifier 
 	(dot size) when given on supported CPUs, such as the M68K. 
 	If you need to pass a macro argument which contains commas or spaces
 	(i.e. a list of elements), you must enclose it between <code>{</code> and <code>}</code> 
@@ -612,7 +618,7 @@ CPU- and output-module allow it):
 
 <dt><code>\?n or \?argname</code></dt>
 <dd><p>      Inserts <code>1</code> (true) if the referenced macro argument (<code>argname</code>
-	 or <code>n</code>&rsquo;th unnamed argument) is non-blank; inserts <code>0</code> (false) otherwise.
+	 or <code>n</code>’th unnamed argument) is non-blank; inserts <code>0</code> (false) otherwise.
 </p></dd>
 
 <dt><code>\#symbolname</code></dt>
@@ -626,7 +632,7 @@ CPU- and output-module allow it):
 </p></dd>
 </dl>
 
-<dt><code>&lt;name&gt; macros [&lt;argname1&gt;[,&lt;argname2&gt;...]]</code></dt>
+</dd><dt><code>&lt;name&gt; macros [&lt;argname1&gt;[,&lt;argname2&gt;...]]</code></dt>
 <dd><p>      Short macro declaration. Declares a single-line macro definition with no need for a 
 	corresponding <code>endm</code> directive. Useful for modeling directives from other assemblers
 	or psuedo-instructions.
@@ -642,7 +648,7 @@ CPU- and output-module allow it):
 <dd><p>      Leave the current macro and continue with assembling the parent
       context. Note that this directive also resets the level of conditional
       assembly to a state before the macro was invoked; which means that
-      it also works as a &rsquo;break&rsquo; command on all new <code>if</code> directives.
+      it also works as a ’break’ command on all new <code>if</code> directives.
 </p>
 </dd>
 
@@ -708,7 +714,7 @@ CPU- and output-module allow it):
 </dd>
 </dl>
 
-<dt><code>org &lt;expression&gt;</code></dt>
+</dd><dt><code>org &lt;expression&gt;</code></dt>
 <dd><p>      Set the base address for the subsequent code to <code>&lt;expression&gt;</code>.
 </p>
 </dd>
@@ -775,7 +781,7 @@ CPU- and output-module allow it):
 
 <dt><code>&lt;label&gt; rs[.&lt;sz&gt;] &lt;expression&gt;</code></dt>
 <dd><p>      M68K reserve symbol directive. Assigns the current value of the reserve symbol counter (<code>__rs</code>) to
-	<code>&lt;label&gt;</code>. Afterwards, the counter is incremented by the directives&rsquo;s size
+	<code>&lt;label&gt;</code>. Afterwards, the counter is incremented by the directives’s size
 	(<code>&lt;sz&gt;</code>) multiplied by <code>&lt;expression&gt;</code>.
 	<code>&lt;sz&gt;</code> defaults to <code>w</code> when not specified.
 </p>
@@ -794,12 +800,12 @@ CPU- and output-module allow it):
 </p>
 </dd>
 
-<dt><code>section &lt;name&gt;[,&quot;&lt;attributes&gt;&quot;]</code></dt>
+<dt><code>section &lt;name&gt;[,"&lt;attributes&gt;"]</code></dt>
 <dd><p>      Starts a new section named <code>&lt;name&gt;</code> or reactivate an old one. If
       attributes are given for an already existing section, they must
-      match exactly. The section&rsquo;s name will also be defined as a new
-      symbol, which represents the section&rsquo;s start address.
-      The <code>&quot;&lt;attributes&gt;&quot;</code> string may consist of the following characters:
+      match exactly. The section’s name will also be defined as a new
+      symbol, which represents the section’s start address.
+      The <code>"&lt;attributes&gt;"</code> string may consist of the following characters:
 </p>
 <p>      Section Contents:
 </p><dl compact="compact">
@@ -882,7 +888,7 @@ CPU- and output-module allow it):
       <code>&lt;name&gt;:&lt;label&gt;</code>. All directives are allowed, but instructions will
       be ignored when such a structure is used. Data definitions can be used as
       default values when the structure is used as initializer. The structure
-      name, <code>&lt;name&gt;</code>, is defined as a global symbol with the structure&rsquo;s size.
+      name, <code>&lt;name&gt;</code>, is defined as a global symbol with the structure’s size.
       A structure definition is ended by <code>ends</code>. See the additional section titled "Structures"
 	  for more information.
 </p>
@@ -893,30 +899,30 @@ CPU- and output-module allow it):
 <dt><code>&lt;strsym&gt; substr &lt;start&gt;,&lt;end&gt;,&lt;symbol&gt;</code></dt>
 <dd><p>      Declares and assigns a string value to <code>&lt;strsym&gt;</code> based on a sub-string derived
 	from <code>&lt;string&gt;</code> or <code>&lt;symbol&gt;</code> between the character indexes 
-	<code>&lt;start&gt;</code> and <code>&lt;end&gt</code>. both <code>&lt;start&gt;</code> and 
-	<code>&lt;end&gt</code> can optionally be left blank. If <code>&lt;start&gt;</code> is left blank
-	sub-string parsing begins at the first character of the given string. If <code>&lt;end&gt</code> is
-	left blank, parsing ends after the last character of the string. Any value between <code>0</code> and the
-	length of the string is accepted as long as the value of <code>&lt;end&gt</code> is greater 
-	than <code>&lt;start&gt;</code>.
+	<code>&lt;start&gt;</code> and <code>&lt;end&gt;</code>. both <code>&lt;start&gt;</code> and 
+	<code>&lt;end&gt;</code> can optionally be left blank. If <code>&lt;start&gt;</code> is left blank
+	sub-string parsing begins at the first character of the given string. If <code>&lt;end&gt;</code> is
+	left blank, parsing ends after the last character of the string. Note that the indexing starts at an index of <code>1</code>, 
+	so any value between <code>1</code> and the length of the string is accepted as long as the value of 
+	<code>&lt;end&gt;</code> is greater than <code>&lt;start&gt;</code>.
 	</p>
 <p>	Example:</p>
 <div class="example">
-<pre class="example">part:	substr	10,19,"The quick brown fox jumps over the lazy dog"	; Assigns the sub-string value "brown fox" to 'part'
+<pre class="example">part:	substr	11,19,"The quick brown fox jumps over the lazy dog"	; Assigns the sub-string value "brown fox" to 'part'
 </pre></div>
 </dd>
 
-<dt><code>switch &lt;expression&gt</code></dt>
+<dt><code>switch &lt;expression&gt;</code></dt>
 <dd><p>      Begins a switch statement block of conditional assembly. Unlike conditional blocks consisting of 
 	<code>if</code>, <code>else</code>, and <code>elseif</code>, a <code>switch</code> block conditionally 
-	assembles code based on whether or not an initial expression, given by <code>&lt;expression&gt</code>, matches the 
+	assembles code based on whether or not an initial expression, given by <code>&lt;expression&gt;</code>, matches the 
 	value of any cases specified between the <code>switch</code> and <code>endc/endif</code> directive. Specific 
-	cases can be checked through the <code>case</code> directive; if <code>&lt;expression&gt</code> matches the value
+	cases can be checked through the <code>case</code> directive; if <code>&lt;expression&gt;</code> matches the value
 	of an expression listed following <code>case</code>, all lines of code following the matched case will be 
-	assembled until another case sub-block is encountered. If <code>&lt;expression&gt</code> matches multiple listed
+	assembled until another case sub-block is encountered. If <code>&lt;expression&gt;</code> matches multiple listed
 	cases within the switch statement, only the first matched case sub-block will be conditionally assembled; 
 	the rest will be ignored. <code>default</code> (or alternatively, <code>else</code>) functions as a special 
-	case which will be assembled if no previously listed case matched <code>&lt;expression&gt</code>.
+	case which will be assembled if no previously listed case matched <code>&lt;expression&gt;</code>.
 </p>
 </dd>
 
@@ -1008,14 +1014,89 @@ point3
 
 
 <hr>
-<a name="Known-Problems-19"></a>
-<h2 class="section">Known Problems</h2>
+<a name="Functions"></a>
+<h2 class="section">Functions</h2>
 
-<p>    Some known problems of this module at the moment:
+<p>In addition to assembler directives, VASM Psi-X also adds support for several built-in functions 
+	and allows the user to define custom mathematical functions. Calls to built-in functions are resolved 
+	during line pre-processing and, therefore, require all parameters to be defined when called, whereas 
+	user-defined functions are pre-processed to their expression definitions, allowing for forward 
+	references to be passed as parameters. They may be called anywhere standard expressions are permitted in
+	the assembler's syntax.
 </p>
-<ul class="no-bullet">
-<li>- n/a
-</li></ul>
+<p>User-defined functions are declared and called as follows:
+</p>
+<div class="example">
+<pre class="example">; Function declaration
+userfn func	foo,bar,	{foo*bar}
+
+; Function call
+	dc.w	userfn(2,3)	; This function call evaluates to a value of 6</pre>
+</div>
+<p>The expression definition must be wrapped in curly braces, but the comma prior to the definition 
+	may be ommitted if desired. A minimum of 1 and a maximum of 32 function arguments may be defined by
+	the user. Functions may also be passed as parameters to other functions or included in the definition of 
+	other functions. Unlike macros, functions may not be redfined after their initial declaration.
+</p>
+
+<p>The following built-in functions are supported by this syntax module:
+</p>
+<dl compact="compact">
+
+<dt><code>def(&lt;symbol&gt;)</code></dt>
+<dd>
+<p>      Returns true if <code>&lt;symbol&gt;</code> has been defined.
+</p>
+</dd>
+
+<dt><code>ref(&lt;symbol&gt;)</code></dt>
+<dd>
+<p>      Returns true if <code>&lt;symbol&gt;</code> has been referenced.
+</p>
+</dd>
+
+<dt><code>sqrt(&lt;value&gt;)</code></dt>
+<dd>
+<p>      Returns the square root of <code>&lt;value&gt;</code>, rounded down to an integer.
+</p>
+</dd>
+
+<dt><code>filesize(&lt;filepath&gt;)</code></dt>
+<dd>
+<p>      Returns the size, in bytes, of the file located at <code>&lt;filepath&gt;</code>, or <code>-1</code> if the file does not exist.
+	The path must be wrapped in single or double-quotes.
+</p>
+</dd>
+
+<dt><code>strlen(&lt;string&gt;)</code></dt>
+<dd>
+<p>      Returns the length of <code>&lt;string&gt;</code>, in characters. The string must be wrapped in single or double-quotes.
+</p>
+</dd>
+
+<dt><code>strcmp(&lt;string1&gt;,&lt;string2&gt;)</code></dt>
+<dd>
+<p>       Returns true if <code>&lt;string1&gt;</code> and <code>&lt;string2&gt;</code> match (case sensitive). Each string must be wrapped in single or double-quotes.
+</p>
+</dd>
+
+<dt><code>stricmp(&lt;string1&gt;,&lt;string2&gt;)</code></dt>
+<dd>
+<p>       Returns true if <code>&lt;string1&gt;</code> and <code>&lt;string2&gt;</code> match (not case sensitive). Each string must be wrapped in single or double-quotes.
+</p>
+</dd>
+
+<dt><code>instr([&lt;start&gt;,]&lt;string&gt;,&lt;sub-string&gt;)</code></dt>
+<dd>
+<p>       Returns the location of the first occurrence of <code>&lt;sub-string&gt;</code> in <code>&lt;string&gt;</code>, in characters. An optional, alternate 
+	<code>&lt;start&gt;</code> index may be defined, with an index of <code>1</code> indicating the first character of <code>&lt;string&gt;</code>.
+	The index returned starts from a value of <code>1</code> as well. A return value of <code>0</code> indicates the <code>&lt;sub-string&gt;</code> was not found.
+	Each string must be wrapped in single or double-quotes.
+</p>
+</dd>
+
+</dl>
+</ul>
 
 <hr>
 <a name="Error-Messages-20"></a>
@@ -1050,19 +1131,27 @@ point3
 </li><li>- 1024: enclosed macro argument missing "}"
 </li><li>- 1025: invalid "public" parameter (must be either "on" or "off")
 </li><li>- 1026: invalid data size value (%d bytes)
-</li><li>- 1027: local macro variable <%s> already declared
-</li><li>- 1028: string symbol <%s> not found
+</li><li>- 1027: local macro variable &lt;%s&gt; already declared
+</li><li>- 1028: string symbol &lt;%s&gt; not found
 </li><li>- 1029: quoted string or string symbol expected in operand
-</li><li>- 1030: substring index must be positive
+</li><li>- 1030: substring index must be a positive, non-zero value
 </li><li>- 1031: substring ending index cannot be greater than the starting index
-</li><li>- 1032: substring ending index cannot be greater than the length of the string
+</li><li>- 1032: substring index cannot be greater than the length of the string
 </li><li>- 1033: string stack capacity reached (%d)
 </li><li>- 1034: string stack is empty
-</li><li>- 1035: invalid option argument \"%c\"
+</li><li>- 1035: invalid option argument "%c"
 </li><li>- 1036: unrecognized option given
 </li><li>- 1037: options stack capacity reached (%d)
 </li><li>- 1038: options stack is empty
-
+</li><li>- 1039: too many arguments specified (maximum of %d allowed)
+</li><li>- 1040: functions must accept at least 1 argument
+</li><li>- 1041: function definitions must be enclosed with curly braces (missing "%c")
+</li><li>- 1042: unexpected end of line
+</li><li>- 1043: function call is missing arguments (expected %d, got %d)
+</li><li>- 1044: error in function call
+</li><li>- 1045: duplicate argument name in function declaration "%s"
+</li><li>- 1046: file path must be in quotes
+</li><li>- 1047: start index is greater than the length of the string
 </li></ul>
 
 <hr>

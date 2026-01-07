@@ -49,4 +49,5 @@
   "error in function call",ERROR,          																					/* 43 */
   "duplicate argument name in function declaration \"%s\"",ERROR,          					/* 44 */
   "file path must be in quotes",ERROR,			                          							/* 45 */
+  "start index is greater than the length of the string",ERROR,        							/* 46 */
   
