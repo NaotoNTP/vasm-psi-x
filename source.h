@@ -84,5 +84,6 @@ source *include_source(char *);
 void include_binary_file(char *,size_t,size_t);
 void source_debug_init(int,void *);
 struct include_path *new_include_path(char *);
+FILE *locate_file(char *,char *,struct include_path **,int);
 
 #endif /* SOURCE_H */

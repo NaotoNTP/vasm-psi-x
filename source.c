@@ -103,7 +103,7 @@ static FILE *open_path(char *compdir,char *path,char *name,char *mode)
 }
 
 
-static FILE *locate_file(char *filename,char *mode,struct include_path **ipath_used)
+FILE *locate_file(char *filename,char *mode,struct include_path **ipath_used,int err)
 {
   struct include_path *ipath;
   FILE *f;
@@ -133,7 +133,8 @@ static FILE *locate_file(char *filename,char *mode,struct include_path **ipath_u
       }
     }
   }
-  general_error(12,filename);
+  if (err)
+    general_error(12,filename);
   return NULL;
 }
 
@@ -288,7 +289,7 @@ source *include_source(char *inc_name)
     struct include_path *ipath;
     FILE *f;
 
-    if (f = locate_file(filename,"r",&ipath)) {
+    if (f = locate_file(filename,"r",&ipath,1)) {
       if (srcfile = read_source_file(f)) {
         srcfile->name = filename;
         srcfile->incpath = ipath;
@@ -315,7 +316,7 @@ void include_binary_file(char *inname,size_t nbskip,size_t nbkeep)
   char *filename = convert_path(inname);
   FILE *f;
 
-  if (f = locate_file(filename,"rb",NULL)) {
+  if (f = locate_file(filename,"rb",NULL,1)) {
     size_t size = filesize(f);
 
     if (size > 0) {

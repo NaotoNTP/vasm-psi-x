@@ -48,5 +48,5 @@
   "function call is missing arguments (expected %d, got %d)",ERROR,                 /* 42 */
   "error in function call",ERROR,          																					/* 43 */
   "duplicate argument name in function declaration \"%s\"",ERROR,          					/* 44 */
-  "square root input must be positive",ERROR,			                          				/* 45 */
+  "file path must be in quotes",ERROR,			                          							/* 45 */
   

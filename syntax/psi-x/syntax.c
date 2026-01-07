@@ -4,6 +4,7 @@
 #include <math.h>
 #include <time.h>
 #include "vasm.h"
+#include "osdep.h"
 
 /* The syntax module parses the input (read_next_line), handles
    assembly-directives (section, data-storage etc.) and parses
@@ -3446,6 +3447,45 @@ int expand_function(source *src,char **line,char *d,int dlen)
         s = skip_function_call_args(s);
       }
     }
+    else if ((nocase && (!strnicmp(name,"filesize",8))) || (!strncmp(name,"filesize",8))) {
+      char *filename;
+      strbuf *name;
+      FILE *f;
+      size_t size = -1;
+
+      s = skip(s+1);
+      
+      if ((*s != '\"') && (*s != '\'')) {
+        syntax_error(45); /* file path must be in quotes */
+
+        s = skip_function_call_args(s);
+        nc = sprintf(d,"(-1)");
+        goto _EXIT_;
+      }
+      else if (name = parse_name(0,&s)) {
+        filename = convert_path(name->str);
+
+        if (f = locate_file(filename,"rb",NULL,0)) {
+          size = filesize(f);
+          fclose(f);
+        }
+
+        myfree(filename);
+      }
+
+      s = skip(s);
+
+      if (*s == ')') {
+        nc = sprintf(d,"(%d)",size);
+        s++;
+      }
+      else {
+        syntax_error(43); /* generic error in function call */
+        
+        s = skip_function_call_args(s);        
+        nc = sprintf(d,"(-1)");
+      }
+    }
     else if ((sym = find_symbol(name)) && (sym->type == FUNCTION)) {
       char *funcdef = sym->text;
       char *args = skip(s+1);
@@ -3659,6 +3699,8 @@ int init_syntax()
   sym = internal_abs("instr");
   sym->type = FUNCTION;
   sym = internal_abs("sqrt");
+  sym->type = FUNCTION;
+  sym = internal_abs("filesize");
   sym->type = FUNCTION;
 
   return 1;
