@@ -62,7 +62,8 @@ struct source {
 #ifdef REPTNSYM
   long reptn;
 #endif
-
+  char *callname;
+  char *callargs;
 };
 
 #define DEPEND_LIST     1

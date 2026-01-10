@@ -665,6 +665,7 @@ macro *new_macro(char *name,struct namelen *maclist,struct namelen *endmlist,
     m->argnames = m->defaults = NULL;
     m->recursions = 0;
     m->vararg = -1;
+    m->labelarg = 0;
     m->srcdebug = !msource_disable;
 
     /* remember the start-line of this macro definition in the real source */
@@ -709,6 +710,14 @@ macro *new_macro(char *name,struct namelen *maclist,struct namelen *endmlist,
 
       m->num_argnames = 0;
       args = skip(args);
+
+      /* check if the label on the macro's call line is to be passed as an argument */
+      if (*args == '*') {
+        args = skip(args+1);
+        m->labelarg = 1;
+        args = MACRO_ARG_SEP(args);  /* check for separator between names */
+      }
+
       while (args!=NULL && !ISEOL(args)) {
         end = SKIP_MACRO_ARGNAME(args);
 
@@ -756,7 +765,7 @@ macro *find_macro(char *name,int name_len)
 
 /* check if 'name' is a known macro, then execute macro context */
 int execute_macro(char *name,int name_len,char **q,int *q_len,int nq,
-                  char *s)
+                  char *s, char* labname)
 {
   macro *m;
   source *src;
@@ -794,6 +803,10 @@ int execute_macro(char *name,int name_len,char **q,int *q_len,int nq,
   src->defline = m->defline;
   src->argnames = m->argnames;
   src->srcdebug = m->srcdebug;
+  
+  /* if the line label should be passed to this macro as an argument, copy the label name */
+  if ((m->labelarg) && (labname))
+    src->callname = mystrdup(labname);
 
 #if MAX_QUALIFIERS>0
   /* remember given qualifiers, or use the cpu's default qualifiers */
@@ -825,6 +838,11 @@ int execute_macro(char *name,int name_len,char **q,int *q_len,int nq,
   /* read macro arguments from operand field */
   s = skip(s);
   n = 0;
+
+  /* duplicate the full argument list (needed for the \_ special parameter)*/
+  if (!ISEOL(s))
+    src->callargs = mystrdup(s);
+
   while (!ISEOL(s) && n<maxmacparams) {
     if (n>=0 && m->vararg==n) {
       /* Varargs: take rest of line as argument */

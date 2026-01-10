@@ -15,7 +15,7 @@
    be provided by the main module.
 */
 
-const char *syntax_copyright="vasm 'psi-x' syntax module v1.3.0 by 'Naoto'";
+const char *syntax_copyright="vasm 'psi-x' syntax module v1.3.1-pre by 'Naoto'";
 
 /* This syntax module was made to combine elements of other default syntax 
    modules into one that I find provides me with the best developer experience 
@@ -41,7 +41,6 @@ int dotdirs;
 static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
-
 static char rs_name[] = "=RS";
 
 static struct namelen macro_dirlist[] = {
@@ -2092,7 +2091,7 @@ static char *parse_label_or_pc(char **start)
 
 void parse(void)
 {
-  char *s,*line,*inst,*labname;
+  char *s,*line,*inst,*labname,*callname;
   char *ext[MAX_QUALIFIERS?MAX_QUALIFIERS:1];
   char *op[MAX_OPERANDS];
   int ext_len[MAX_QUALIFIERS?MAX_QUALIFIERS:1];
@@ -2549,10 +2548,23 @@ void parse(void)
       #else
         else {
       #endif
-          /* it's just a label */
-          label = new_labsym(0,labname);
-          label->flags |= symflags;
-          add_atom(0,new_label_atom(label));
+
+          strbuf *buf;
+          macro *mac;
+          char *t = skip(s);
+
+          /* check if there is a macro called on this line that takes a label as an input argument */
+          if ((buf = parse_identifier(1,&t)) && (mac = find_macro(buf->str,buf->len)) && (mac->labelarg)) {
+            callname = labname;
+          }
+          else {
+            callname = NULL;
+
+            /* add this as a regular label */
+            label = new_labsym(0,labname);
+            label->flags |= symflags;
+            add_atom(0,new_label_atom(label));
+          }
         }
       }
     }
@@ -2641,7 +2653,7 @@ void parse(void)
     }
     s = skip(s);
 
-    if (execute_macro(inst,inst_len,ext,ext_len,ext_cnt,s))
+    if (execute_macro(inst,inst_len,ext,ext_len,ext_cnt,s,callname))
       continue;
     if (execute_struct(inst,inst_len,s))
       continue;
@@ -2798,6 +2810,28 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       }
       else {
         nc = -1;
+      }
+    }
+    else if (*s == '*') {
+      /* \*: insert the label from the line this macro was called on */
+      if (src->callname) {
+        nc = sprintf(d,"%s",src->callname);
+        s++;
+      }
+      else {
+        s--;
+        return 0;
+      }
+    }
+    else if (*s == '_') {
+      /* \_: insert the full list of arguments passed to this macro call */
+      if (src->callargs) {
+        nc = sprintf(d,"%s",src->callargs);
+        s++;
+      }
+      else {
+        s--;
+        return 0;
       }
     }
     else if (*s=='?' && dlen>=1) {

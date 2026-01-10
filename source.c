@@ -235,6 +235,8 @@ source *new_source(char *srcname,struct source_file *srcfile,
   /* -1 outside of a repetition block */
   s->reptn = cur_src ? cur_src->reptn : -1;
 #endif
+  s->callname = NULL;
+  s->callargs = NULL;
   return s;
 }
 
