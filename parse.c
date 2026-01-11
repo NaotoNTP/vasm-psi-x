@@ -592,7 +592,7 @@ int find_macarg_name(source *src,char *name,size_t len)
   int idx;
 
   /* named macro arguments */
-  if (src->macro != NULL) {
+  if ((src->macro != NULL) || (src->argnames != NULL)){
     for (idx=0,ma=src->argnames; ma!=NULL && idx<maxmacparams;
          idx++,ma=ma->argnext) {
       /* @@@ case-sensitive comparison? */
@@ -1033,6 +1033,7 @@ static void start_repeat(char *rept_end)
       }
 #endif
       src->argnames = cur_src->argnames;
+      src->varnames = cur_src->varnames;
     }
 
     if (src->repeat == 0)

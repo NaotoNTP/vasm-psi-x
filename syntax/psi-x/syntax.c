@@ -41,7 +41,7 @@ int dotdirs;
 static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
-static char rs_name[] = "=RS";
+static char rs_name[] = "=RESERVE_SYM";
 
 static struct namelen macro_dirlist[] = {
   { 5,"macro" }, { 6,"macros" }, { 0,0 }
@@ -441,7 +441,7 @@ char *find_macvar(source *src,char *name,size_t len)
 {
   struct macarg *macvar;
 
-  if (src->macro != NULL) {
+  if ((src->macro != NULL) || (src->varnames != NULL)) {
     for (macvar = src->varnames; macvar != NULL ; macvar = macvar->argnext) {
       /* @@@ case-sensitive comparison? */
       if (macvar->arglen == len && strncmp(macvar->argname,name,len) == 0) {
@@ -2869,8 +2869,15 @@ int expand_macro(source *src,char **line,char *d,int dlen)
         /* \varname: insert local macro variable and handle string symbol expansion */
         symbol *sym;
         char *t = d;
+        source *parent = src;
 
-        nc = sprintf(d,"%s_%lu$",varname,src->id);
+        while (parent) {
+          if (parent->macro)
+            break;
+          parent = parent->parent;
+        }
+
+        nc = sprintf(d,"%s_%lu$",varname,parent->id);
 
         if (varname = parse_symbol(&t)) {
           if ((sym = find_symbol(varname)) && sym->type == STRSYM) {
@@ -2905,13 +2912,20 @@ int expand_macro(source *src,char **line,char *d,int dlen)
       if ((varname = find_macvar(src,s,end-s)) != NULL) {
         symbol *sym;
         char *t = d + 1;
+        source *parent = src;
+
+        while (parent) {
+          if (parent->macro)
+            break;
+          parent = parent->parent;
+        }
 
         if (*end == '}') {
-          nc = sprintf(d,"{%s_%lu$}",varname,src->id);
+          nc = sprintf(d,"{%s_%lu$}",varname,parent->id);
           s = end + 1;
         }
         else {
-          nc = sprintf(d,"{%s_%lu$",varname,src->id);
+          nc = sprintf(d,"{%s_%lu$",varname,parent->id);
           s = end;
         }
 
@@ -2944,7 +2958,15 @@ int expand_macro(source *src,char **line,char *d,int dlen)
     }
     else if ((varname = find_macvar(src,s,end-s)) != NULL) {
       /* varname: insert local macro variable */
-      nc = sprintf(d,"%s_%lu$",varname,src->id);
+      source *parent = src;
+
+      while (parent) {
+        if (parent->macro)
+          break;
+        parent = parent->parent;
+      }
+
+      nc = sprintf(d,"%s_%lu$",varname,parent->id);
       s = end;
     }
     else {
@@ -3674,10 +3696,9 @@ int init_syntax()
   /* refer Psy-Q names to inaccessible internal symbols */
   sym = internal_abs(NARGSYM);
   refer_symbol(sym,"narg");
-  
   sym = internal_abs(rs_name);
   refer_symbol(sym,"__rs");
-
+  
   current_pc_char = '*';
   current_pc_str[0] = current_pc_char;
   current_pc_str[1] = 0;

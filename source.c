@@ -219,6 +219,7 @@ source *new_source(char *srcname,struct source_file *srcfile,
   s->num_params = -1;   /* not a macro, no parameters */
   s->param[0] = emptystr;
   s->param_len[0] = 0;
+  s->argnames = NULL;
   s->varnames = NULL;
   s->id = id++;	        /* every source has unique id - important for macros */
   s->srcptr = text;

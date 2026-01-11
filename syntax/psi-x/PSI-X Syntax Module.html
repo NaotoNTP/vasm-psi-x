@@ -353,7 +353,7 @@ CPU- and output-module allow it):
 	and assign it a constant value specified by <code>&lt;expression&gt;</code>. 
 	Note that attempting to reassign the value of <code>&lt;symbol&gt;</code> beyond 
 	this point will cause an error. If you need to be able to redifne the value of
-	as symbol, use the <code>set</code> directive instead.
+	a symbol, use the <code>set</code> directive instead.
 </p>
 </dd>
 
@@ -567,16 +567,16 @@ CPU- and output-module allow it):
 <dt><code>irp &lt;symbol&gt;[,&lt;val&gt;...]</code></dt>
 <dd><p>      Iterates the block between <code>irp</code> and <code>endr</code> for each
       <code>&lt;val&gt;</code>. The current <code>&lt;val&gt;</code>, which may be embedded in quotes,
-      is assigned to <code>\symbol</code>. If no value is given, then the block is
-      assembled once, with <code>\symbol</code> set to an empty string.
+      is assigned to <code>&lt;symbol&gt</code>. If no value is given, then the block is
+      assembled once, with <code>&lt;symbol&gt</code> set to an empty string.
 </p>
 </dd>
 
 <dt><code>irpc &lt;symbol&gt;[,&lt;val&gt;...]</code></dt>
 <dd><p>      Iterates the block between <code>irpc</code> and <code>endr</code> for each
-      character in each <code>&lt;val&gt;</code>, and assign it to <code>\symbol</code>.
+      character in each <code>&lt;val&gt;</code>, and assign it to <code>&lt;symbol&gt</code>.
       If no value is given, then the block is assembled once, with
-      <code>\symbol</code> set to an empty string.
+      <code>&lt;symbol&gt</code> set to an empty string.
 </p>
 </dd>
 
@@ -874,10 +874,8 @@ CPU- and output-module allow it):
 <dt><code>shift</code></dt>
 <dd><p>      A special directive for use within macros that shifts the list of passed
 	macro arguments one place to the left, discarding the leftmost argument. Useful for
-	iteration purposes or designing macros which may take a variable number of argumnets.
-	The internal symbol <code>__SHIFTN</code> holds the current number of shifts performed
-	for the current macro. An error is issued when this directive is used outside of the 
-	macro context.
+	iteration purposes or designing macros which may take a variable number of arguments.
+	An error is issued when this directive is used outside of the macro context.
 </p>
 </dd>
 
