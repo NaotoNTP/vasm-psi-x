@@ -41,7 +41,7 @@ int dotdirs;
 static char code_name[] = "CODE",code_type[] = "acrx";
 static char data_name[] = "DATA",data_type[] = "adrw";
 static char bss_name[] = "BSS",bss_type[] = "aurw";
-static char rs_name[] = "=RESERVE_SYM";
+static char rs_name[] = "=RS";
 
 static struct namelen macro_dirlist[] = {
   { 5,"macro" }, { 6,"macros" }, { 0,0 }
@@ -493,6 +493,7 @@ static symbol *new_setoffset_size(char *equname,char *symname,
 {
   symbol *sym,*equsym;
   expr *new,*old;
+  taddr result;
 
   /* get current offset symbol expression, then increment or decrement it */
   sym = internal_abs(symname);
@@ -528,8 +529,8 @@ static symbol *new_setoffset_size(char *equname,char *symname,
   else
     equsym = NULL;
 
-  simplify_expr(new);
-  sym->expr = new;
+  eval_expr(new,&result,NULL,0);
+  sym->expr = number_expr(result);
   return equsym;
 }
 
