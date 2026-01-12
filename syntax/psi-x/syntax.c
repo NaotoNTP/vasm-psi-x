@@ -1313,7 +1313,10 @@ static void handle_while(char *s)
   condexp = parse_expr_tmplab(&t);
 
   if (eval_expr(condexp,&val,NULL,0))
-    new_repeat(LOOP_WHILE,mystrdup(s),NULL,while_dirlist,endw_dirlist);
+    if (val)
+      new_repeat(LOOP_WHILE,mystrdup(s),NULL,while_dirlist,endw_dirlist);
+    else
+      new_repeat(0,NULL,NULL,NULL,endw_dirlist);
   else {
     syntax_error(47);  /* expression must evaluate */
     new_repeat(0,NULL,NULL,NULL,endw_dirlist);
