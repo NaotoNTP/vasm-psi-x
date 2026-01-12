@@ -1159,8 +1159,21 @@ char *read_next_line(void)
       /* if currently in a loop, evaluate the condition expression */
       if (cur_src->isloop) {
         char *cond = cur_src->irpname;
-        cond_eval = (cond != NULL) ? parse_constexpr(&cond) : 0;
-        cond_eval = (cur_src->isloop == LOOP_DOUNTIL) ? !cond_eval : cond_eval;
+
+        if (cond) {
+          expr *condexp = parse_expr_tmplab(&cond);
+          
+          if (!eval_expr(condexp,&cond_eval,NULL,0)) {
+            syntax_error(47);  /* expression must evaluate */
+            cond_eval = 0;
+          }
+          else
+            cond_eval = (cur_src->isloop == LOOP_DOUNTIL) ? !cond_eval : cond_eval;
+          
+          free_expr(condexp);
+        } 
+        else
+          cond_eval = 0;
       }
 
       if ((--cur_src->repeat > 0) && cond_eval) {

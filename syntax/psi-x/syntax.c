@@ -977,7 +977,7 @@ static int eval_ifexp(char **s,int c)
     }
   }
   else
-    general_error(30);  /* expression must be constant */
+    syntax_error(47);  /* expression must evaluate */
   free_expr(condexp);
   return b;
 }
@@ -1077,7 +1077,7 @@ static void handle_switch(char *s)
   if (eval_expr(condexp,&val,NULL,0))
     cond_switch(val);
   else
-    general_error(30);  /* expression must be constant */
+    syntax_error(47);  /* expression must evaluate */
   
   free_expr(condexp);
 }
@@ -1090,7 +1090,7 @@ static int eval_case(char *s)
   s = skip(s);
   for (;;) {
     if (!eval_expr(parse_expr_tmplab(&s),&val,NULL,0)) {
-      general_error(30);  /* expression must be constant */
+      syntax_error(47);  /* expression must evaluate */
       break;
     }
 
@@ -1276,9 +1276,17 @@ static void handle_irpc(char *s)
 
 static void handle_rept(char *s)
 {
-  int cnt = (int)parse_constexpr(&s);
+  expr *condexp = parse_expr_tmplab(&s);
+  taddr cnt;
 
-  new_repeat(cnt<0?0:cnt,NULL,NULL,rept_dirlist,endr_dirlist);
+  if (eval_expr(condexp,&cnt,NULL,0))
+    new_repeat(cnt<0?0:(int)cnt,NULL,NULL,rept_dirlist,endr_dirlist);
+  else {
+    syntax_error(47);  /* expression must evaluate */
+    new_repeat(0,NULL,NULL,NULL,endr_dirlist);
+  }
+  
+  free_expr(condexp);
 }
 
 static void handle_endr(char *s)
@@ -1291,6 +1299,8 @@ static void handle_endr(char *s)
  */
 static void handle_while(char *s)
 {
+  expr *condexp;
+  taddr val;
   char *t = skip(s);
   s = t;
 
@@ -1300,10 +1310,16 @@ static void handle_while(char *s)
     return;
   }
 
-  if (parse_constexpr(&t))
+  condexp = parse_expr_tmplab(&t);
+
+  if (eval_expr(condexp,&val,NULL,0))
     new_repeat(LOOP_WHILE,mystrdup(s),NULL,while_dirlist,endw_dirlist);
-  else
+  else {
+    syntax_error(47);  /* expression must evaluate */
     new_repeat(0,NULL,NULL,NULL,endw_dirlist);
+  }
+
+  free_expr(condexp);
 }
 
 static void handle_endw(char *s)
