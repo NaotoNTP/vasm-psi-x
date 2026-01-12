@@ -3146,6 +3146,21 @@ int find_function_in_line(char *s)
   return 0;
 }
 
+int get_block_comment_state()
+{
+  return blockcomment;
+}
+
+char get_comment_char()
+{
+  return commentchar;
+}
+
+void set_block_comment_state(int state)
+{
+  blockcomment = state;
+}
+
 char *skip_function_call_args(char *s) {
   while (!ISEOL(s)) {
     int parenthDepth = 0;  /* depth of the current set of parenthesis */

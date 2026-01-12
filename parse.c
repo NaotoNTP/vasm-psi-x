@@ -1146,7 +1146,7 @@ section *find_structure(char *name,int name_len)
 char *read_next_line(void)
 {
   char *s,*srcend,*d;
-  int nparam,len;
+  int nparam,len,comment = 0;
   int skip_listing = 0;
   char *rept_end = NULL;
 
@@ -1340,11 +1340,13 @@ char *read_next_line(void)
   while (s<srcend && *s!='\0') {
     int nc = 0;  
 
-    if (nparam >= 0)
-      nc = expand_macro(cur_src,&s,d,len);  /* try macro arg. expansion */
+    if (!comment) {
+      if (nparam >= 0)
+        nc = expand_macro(cur_src,&s,d,len);  /* try macro arg. expansion */
 
-    if (nc == 0)
-      nc = expand_ctrlparams(cur_src,&s,d,len); /* try control character expansion */
+      if (nc == 0)
+        nc = expand_ctrlparams(cur_src,&s,d,len); /* try control character expansion */
+    }
 
     if (nc > 0) {
       /* expanded macro arguments or control characters */
@@ -1361,15 +1363,19 @@ char *read_next_line(void)
         }
         else {
           /* treat a single \r as \n */
+          comment = 0;
           s++;
           break;
         }
       }
       else if (*s == '\n') {
+        comment = 0;
         s++;
         break;
       }
       else if (len > 0) {
+        if (*s == get_comment_char())
+          comment = 1;
         *d++ = *s++;
         len--;
       }
